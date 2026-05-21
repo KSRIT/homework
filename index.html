@@ -58,6 +58,7 @@
 
     <!-- ========== ตั้งค่า URL ของ GAS ที่นี่ ========== -->
     <script>
+        // โค้ดส่วนครูและนักเรียน จะยิง API ไปเช็ค User/Password จาก Google Sheets ผ่าน URL นี้
         const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwe0ZhgtZ06SryGz7tv33mUnis71tPp9LoSd4nLSgkoo4rv0Xo5Rtl6tIONg539AYPaZg/exec"; 
     </script>
 
@@ -290,7 +291,7 @@
     <div id="upload-port-modal" class="hide fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all my-8 max-h-[90vh] flex flex-col">
             <div class="bg-gradient-to-r from-brand-pink to-brand-pink_light p-5 flex justify-between text-white shrink-0">
-                <h3 class="font-bold"><i class="fas fa-upload mr-2"></i>อัปโหลดผลงาน</h3>
+                <h3 class="font-bold"><i class="fas fa-folder-plus mr-2"></i>สร้างโฟลเดอร์ผลงานใหม่</h3>
                 <button onclick="closeModal('upload-port-modal')" class="text-white hover:text-gray-200"><i class="fas fa-times text-xl"></i></button>
             </div>
             <form id="upload-port-form" onsubmit="submitPortfolio(event)" class="p-6 space-y-4 overflow-y-auto custom-scrollbar">
@@ -303,23 +304,53 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1">ชื่อผลงาน</label>
+                    <label class="block text-sm font-medium mb-1">ชื่อโฟลเดอร์/กิจกรรม</label>
                     <input type="text" id="port-title" required class="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-pink outline-none bg-gray-50">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1">ไฟล์รูปภาพ <span class="text-brand-pink text-xs">(เลือกได้หลายรูป, รูปละไม่เกิน 2MB)</span></label>
-                    <!-- Added 'multiple' attribute -->
+                    <label class="block text-sm font-medium mb-1">ไฟล์รูปภาพ <span class="text-brand-pink text-xs">(เลือกได้หลายรูป, รูปแรกจะเป็นหน้าปกโฟลเดอร์)</span></label>
                     <input type="file" id="port-files" accept="image/*" multiple class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-brand-pink hover:file:bg-pink-100" required onchange="handlePortfolioMultiplePreview(event)">
                     
-                    <!-- Container for multiple image previews -->
                     <div id="portfolio-previews-container" class="mt-4 flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
                         <!-- Imgs injected here -->
                     </div>
                 </div>
                 <div class="pt-4 flex justify-end gap-3 border-t mt-4">
-                    <button type="submit" id="btn-submit-port" class="px-6 py-2.5 bg-brand-pink text-white rounded-xl shadow-md w-full font-bold hover:bg-pink-600 transition-colors">บันทึกลง Drive</button>
+                    <button type="submit" id="btn-submit-port" class="px-6 py-2.5 bg-brand-pink text-white rounded-xl shadow-md w-full font-bold hover:bg-pink-600 transition-colors">อัปโหลดลงโฟลเดอร์ Drive</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Portfolio Gallery Modal (สำหรับดูรูปในโฟลเดอร์) -->
+    <div id="portfolio-gallery-modal" class="hide fixed inset-0 bg-black/95 backdrop-blur-md z-[80] flex flex-col items-center justify-center p-4">
+        <!-- Top Nav -->
+        <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-10">
+            <div class="text-white">
+                <h3 id="gallery-title" class="text-xl font-bold">ชื่อผลงาน</h3>
+                <p id="gallery-category" class="text-sm text-gray-300"></p>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="downloadCurrentGalleryImage()" class="text-white hover:text-brand-pink text-2xl transition-colors bg-white/10 w-10 h-10 rounded-full flex items-center justify-center backdrop-blur" title="ดาวน์โหลดรูปนี้"><i class="fas fa-download"></i></button>
+                <button onclick="closeModal('portfolio-gallery-modal')" class="text-white hover:text-gray-300 text-3xl transition-colors"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        
+        <!-- Main Image Area -->
+        <div class="relative w-full max-w-5xl flex items-center justify-center flex-1 my-16">
+            <button onclick="prevGalleryImage()" class="absolute left-2 md:left-10 bg-black/50 text-white w-12 h-12 rounded-full hover:bg-brand-pink transition-colors z-10 flex items-center justify-center text-xl backdrop-blur border border-white/20"><i class="fas fa-chevron-left"></i></button>
+            
+            <img id="gallery-main-img" src="" class="max-h-[70vh] max-w-full object-contain rounded-xl shadow-2xl transition-opacity duration-300">
+            
+            <button onclick="nextGalleryImage()" class="absolute right-2 md:right-10 bg-black/50 text-white w-12 h-12 rounded-full hover:bg-brand-pink transition-colors z-10 flex items-center justify-center text-xl backdrop-blur border border-white/20"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        
+        <!-- Bottom Nav (Thumbnails & Counter) -->
+        <div class="absolute bottom-0 w-full p-4 bg-gradient-to-t from-black/80 to-transparent flex flex-col items-center">
+            <div id="gallery-counter" class="text-white text-sm font-medium mb-3 bg-black/50 px-3 py-1 rounded-full backdrop-blur">1 / 1</div>
+            <div id="gallery-thumbnails" class="flex gap-2 overflow-x-auto max-w-full pb-2 px-4 custom-scrollbar justify-center">
+                <!-- Thumbnails injected here -->
+            </div>
         </div>
     </div>
 
@@ -336,6 +367,11 @@
         let tempEditProfileImage = null; // สำหรับแก้ไขรูปโปรไฟล์
 
         let currentCalendarDate = new Date();
+        
+        // สถานะสำหรับหน้าแกลเลอรีผลงาน
+        let currentPortfolioGroups = [];
+        let currentGalleryItems = [];
+        let currentGalleryIndex = 0;
 
         function showLoader(text = 'กำลังประมวลผล...') {
             document.getElementById('loader-text').innerText = text;
@@ -377,7 +413,6 @@
                 return result;
             } catch (error) {
                 hideLoader();
-                // To allow local visual testing without errors crashing the flow completely
                 console.error(error);
                 return { success: false, error: true }; 
             }
@@ -389,7 +424,6 @@
                 const res = await callAPI('checkSession', { userId: savedSession });
                 if(res && res.success) {
                     currentUser = res.user;
-                    // Mock local profile image if not returned by server yet
                     if(!currentUser.profileImage) currentUser.profileImage = localStorage.getItem('mock_profile_img_' + currentUser.id) || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
                     loadInitialData();
                 } else {
@@ -411,6 +445,8 @@
             const u = document.getElementById('login-username').value;
             const p = document.getElementById('login-password').value;
             
+            // หมายเหตุ: ฟังก์ชันนี้จะยิง API ไปยัง Google Apps Script (Code.gs) 
+            // ซึ่งจะตรวจสอบ Username/Password จากตารางใน Google Sheets โดยตรง
             const res = await callAPI('login', { username: u, password: p });
             if(res && res.success) {
                 currentUser = res.user;
@@ -419,9 +455,9 @@
                 showToast(`ยินดีต้อนรับ ${currentUser.name}`);
                 loadInitialData();
             } else if (res && res.error) {
-                showToast('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (ทดสอบออฟไลน์)', 'error');
+                showToast('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
             } else {
-                showToast(res ? res.message : 'Login failed', 'error');
+                showToast(res ? res.message : 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
             }
         }
 
@@ -454,7 +490,7 @@
             document.getElementById('edit-profile-preview').src = currentUser.profileImage;
             tempEditProfileImage = null;
             document.getElementById('edit-profile-modal').classList.remove('hide');
-            document.getElementById('mobile-menu').classList.add('hide'); // Close mobile menu if open
+            document.getElementById('mobile-menu').classList.add('hide'); 
         }
 
         function handleProfileImagePreview(event) {
@@ -474,21 +510,16 @@
             e.preventDefault();
             const newName = document.getElementById('edit-profile-name').value;
             
-            // Note: Currently updating the user locally for the demo, since backend "updateProfile" might not exist yet
             currentUser.name = newName;
             if(tempEditProfileImage) {
                 currentUser.profileImage = tempEditProfileImage;
                 localStorage.setItem('mock_profile_img_' + currentUser.id, tempEditProfileImage);
             }
-            
-            // In a real app, call API to update user table
-            // await callAPI('updateProfile', { userId: currentUser.id, name: newName, profileImageBase64: ... });
 
             updateUIUserInfo();
             closeModal('edit-profile-modal');
             showToast('อัปเดตโปรไฟล์เรียบร้อยแล้ว');
             
-            // If we are on teacher dash, rerender to reflect name change if applicable
             if(document.getElementById('page-title').innerText.includes("รายชื่อ")) renderTeacherDashboard();
         }
 
@@ -522,7 +553,7 @@
                 { id: 'board', icon: 'fa-clipboard', text: 'กระดานการบ้านห้อง' },
                 { id: 'mytasks', icon: 'fa-tasks', text: 'งานที่ฉันเลือกทำ' },
                 { id: 'calendar', icon: 'fa-calendar-alt', text: 'ปฏิทินส่งงาน' },
-                { id: 'portfolio', icon: 'fa-images', text: 'คลังผลงาน (Drive)' }
+                { id: 'portfolio', icon: 'fa-folder-open', text: 'แฟ้มผลงาน' }
             ] : [
                 { id: 'teacher-dash', icon: 'fa-users', text: 'รายชื่อและการส่งงาน' },
                 { id: 'calendar', icon: 'fa-calendar-alt', text: 'ปฏิทินห้องเรียน' }
@@ -544,7 +575,6 @@
             const container = document.getElementById('content-container');
             container.innerHTML = '<div class="text-center py-10 text-gray-400"><i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i><br>กำลังโหลด...</div>';
             
-            // Scroll top
             document.getElementById('scroll-main').scrollTo(0,0);
 
             setTimeout(() => {
@@ -577,6 +607,84 @@
                 }
                 
                 document.getElementById('task-detail-modal').classList.remove('hide');
+            }
+        }
+
+        // --- PORTFOLIO GROUPING & GALLERY LOGIC ---
+        function groupPortfolios(ports) {
+            const groups = {};
+            ports.forEach(p => {
+                // จัดกลุ่มด้วย ชื่อผลงาน และ หมวดหมู่ เพื่อสร้างเป็น 1 โฟลเดอร์
+                const key = p.title + '|' + p.category;
+                if(!groups[key]) groups[key] = { title: p.title, category: p.category, date: p.date, items: [] };
+                groups[key].items.push(p);
+            });
+            // แปลงกลับเป็น Array และเรียงจากใหม่ไปเก่า
+            return Object.values(groups).reverse();
+        }
+
+        function openPortfolioGallery(groupIndex) {
+            const group = currentPortfolioGroups[groupIndex];
+            if(!group || group.items.length === 0) return;
+            
+            currentGalleryItems = group.items;
+            currentGalleryIndex = 0;
+            
+            document.getElementById('gallery-title').innerText = group.title;
+            document.getElementById('gallery-category').innerText = `หมวดหมู่: ${group.category}`;
+            
+            updateGalleryUI();
+            document.getElementById('portfolio-gallery-modal').classList.remove('hide');
+        }
+
+        function updateGalleryUI() {
+            const item = currentGalleryItems[currentGalleryIndex];
+            const imgEl = document.getElementById('gallery-main-img');
+            
+            // Animation effect
+            imgEl.classList.add('opacity-0');
+            setTimeout(() => {
+                imgEl.src = item.fileUrl;
+                imgEl.classList.remove('opacity-0');
+            }, 150);
+
+            document.getElementById('gallery-counter').innerText = `${currentGalleryIndex + 1} / ${currentGalleryItems.length}`;
+            
+            // สร้าง Thumbnail ด้านล่าง
+            const thumbContainer = document.getElementById('gallery-thumbnails');
+            thumbContainer.innerHTML = currentGalleryItems.map((t, idx) => `
+                <img src="${t.fileUrl}" class="w-16 h-16 object-cover rounded-lg cursor-pointer border-2 ${idx === currentGalleryIndex ? 'border-brand-pink opacity-100 scale-110' : 'border-transparent opacity-50 hover:opacity-100'} transition-all shrink-0 shadow-sm" onclick="setGalleryIndex(${idx})">
+            `).join('');
+            
+            // เลื่อน Thumbnail ให้อยู่ตรงกลาง (ถ้าเป็นไปได้)
+            const activeThumb = thumbContainer.children[currentGalleryIndex];
+            if(activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+
+        function nextGalleryImage() {
+            if(currentGalleryIndex < currentGalleryItems.length - 1) {
+                currentGalleryIndex++;
+                updateGalleryUI();
+            }
+        }
+
+        function prevGalleryImage() {
+            if(currentGalleryIndex > 0) {
+                currentGalleryIndex--;
+                updateGalleryUI();
+            }
+        }
+
+        function setGalleryIndex(idx) {
+            currentGalleryIndex = idx;
+            updateGalleryUI();
+        }
+
+        function downloadCurrentGalleryImage() {
+            const item = currentGalleryItems[currentGalleryIndex];
+            if(item && item.fileUrl) {
+                // เปิดไฟล์ URL ในหน้าต่างใหม่ เพื่อให้ผู้ใช้กดดาวน์โหลดหรือดูภาพเต็มจาก Drive ได้
+                window.open(item.fileUrl, '_blank');
             }
         }
 
@@ -629,25 +737,19 @@
             const today = new Date();
             const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
 
-            // Get relevant tasks
             let relevantTasks = [];
             if(currentUser.role === 'student') {
                 relevantTasks = DB.myTasks.filter(t => t.status === 'pending');
             } else {
-                relevantTasks = DB.boardTasks; // Teacher sees all board tasks
+                relevantTasks = DB.boardTasks;
             }
 
-            // Fill empty start slots
             for (let i = 0; i < firstDayIndex; i++) {
                 grid.innerHTML += `<div></div>`;
             }
 
-            // Fill days
             for (let i = 1; i <= daysInMonth; i++) {
-                // Format: YYYY-MM-DD
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                
-                // Find tasks for this day
                 const tasksOnDay = relevantTasks.filter(t => t.deadline === dateStr);
                 
                 let classes = "py-3 rounded-xl border border-gray-100 calendar-day flex flex-col items-center justify-center";
@@ -667,14 +769,14 @@
                 tasksOnDay = DB.boardTasks.filter(t => t.deadline === dateStr);
             }
 
-            if(tasksOnDay.length === 0) return; // Ignore clicks on empty days
+            if(tasksOnDay.length === 0) return; 
 
             const container = document.getElementById('calendar-detail-content');
             container.innerHTML = tasksOnDay.map(t => `
                 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-3">
                     <h4 class="font-bold text-gray-800">${t.subject}</h4>
                     <p class="text-sm text-gray-600 mt-1 line-clamp-2">${t.desc}</p>
-                    <button onclick="openTaskDetail('${t.boardTaskId || t.id}')" class="text-xs text-brand-blue font-medium mt-2"><i class="fas fa-external-link-alt"></i> ดูรายละเอียด</button>
+                    <button onclick="openTaskDetail('${t.boardTaskId || t.id}')" class="text-xs text-brand-blue font-medium mt-2"><i class="fas fa-external-link-alt"></i> ดูรายละเอียดงาน</button>
                 </div>
             `).join('');
 
@@ -771,39 +873,53 @@
         }
 
         function renderPortfolio() {
-            document.getElementById('page-title').innerText = "คลังผลงานส่วนตัว";
-            document.getElementById('page-subtitle').innerText = "ผลงานที่ถูกบันทึกใน Google Drive";
+            document.getElementById('page-title').innerText = "แฟ้มผลงานส่วนตัว";
+            document.getElementById('page-subtitle').innerText = "จัดเก็บผลงานเป็นโฟลเดอร์ คลิกเพื่อดูภาพทั้งหมดด้านใน";
+
+            // จัดกลุ่มผลงาน (เพื่อสร้างเป็น Folder)
+            const myPorts = DB.portfolios.filter(p => p.studentId === currentUser.id);
+            currentPortfolioGroups = groupPortfolios(myPorts);
 
             let html = `
                 <div class="mb-6">
                     <button onclick="document.getElementById('upload-port-modal').classList.remove('hide')" class="px-5 py-2.5 bg-brand-pink text-white rounded-xl shadow font-medium hover:bg-pink-600 transition-colors">
-                        <i class="fas fa-images"></i> อัปโหลดรูปภาพผลงานเพิ่ม
+                        <i class="fas fa-folder-plus"></i> อัปโหลดสร้างโฟลเดอร์ผลงานใหม่
                     </button>
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                    ${DB.portfolios.length===0 ? '<div class="col-span-full text-center text-gray-400 py-10 bg-white rounded-xl border border-dashed">ยังไม่มีผลงาน</div>':''}
-                    ${DB.portfolios.slice().reverse().map(p => `
-                        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-shadow group">
+                    ${currentPortfolioGroups.length===0 ? '<div class="col-span-full text-center text-gray-400 py-10 bg-white rounded-xl border border-dashed">ยังไม่มีโฟลเดอร์ผลงาน</div>':''}
+                    ${currentPortfolioGroups.map((group, index) => {
+                        // ใช้รูปแรกในกลุ่มเป็นหน้าปก Thumbnail
+                        const coverImgUrl = group.items[0].fileUrl;
+                        return `
+                        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all group cursor-pointer" onclick="openPortfolioGallery(${index})">
                             <div class="h-40 bg-gray-100 overflow-hidden relative">
-                                <img src="${p.fileUrl}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.src='https://via.placeholder.com/400x300?text=Image+Saved'">
+                                <img src="${coverImgUrl}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.src='https://via.placeholder.com/400x300?text=Folder'">
+                                <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                    <div class="bg-black/60 text-white rounded-full w-12 h-12 flex flex-col items-center justify-center backdrop-blur shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+                                        <i class="fas fa-images text-lg"></i>
+                                        <span class="text-[10px] font-bold">${group.items.length}</span>
+                                    </div>
+                                </div>
                             </div>
                             <div class="p-3">
-                                <h4 class="font-bold text-sm text-gray-800 line-clamp-1" title="${p.title}">${p.title}</h4>
-                                <div class="flex flex-col gap-1 mt-2">
-                                    <span class="text-[10px] bg-pink-50 text-brand-pink px-2 py-0.5 rounded self-start">${p.category}</span>
-                                    <a href="${p.fileUrl}" target="_blank" class="text-xs text-brand-blue hover:underline self-end"><i class="fas fa-external-link-alt"></i> เปิดรูป</a>
+                                <h4 class="font-bold text-sm text-gray-800 line-clamp-1" title="${group.title}"><i class="fas fa-folder text-brand-pink mr-1"></i> ${group.title}</h4>
+                                <div class="mt-1 flex justify-between items-center">
+                                    <span class="text-[10px] text-gray-500">${group.date}</span>
+                                    <span class="text-[10px] bg-pink-50 text-brand-pink px-2 py-0.5 rounded">${group.category}</span>
                                 </div>
                             </div>
                         </div>
-                    `).join('')}
+                        `
+                    }).join('')}
                 </div>
             `;
             document.getElementById('content-container').innerHTML = html;
         }
 
         function renderTeacherDashboard() {
-            document.getElementById('page-title').innerText = "ข้อมูลการส่งงานของนักเรียน";
-            document.getElementById('page-subtitle').innerText = "ตารางสรุปสถานะการบ้าน";
+            document.getElementById('page-title').innerText = "ข้อมูลการส่งงานและผลงานนักเรียน";
+            document.getElementById('page-subtitle').innerText = "คลิกดูรายละเอียดเพื่อตรวจสอบผลงานของนักเรียนแต่ละคนได้";
 
             const students = DB.users.filter(u => u.role === 'student').sort((a,b)=>a.no - b.no);
 
@@ -815,10 +931,10 @@
                                 <tr class="bg-gray-50 text-gray-500 text-sm border-b border-gray-200">
                                     <th class="p-4 text-center w-16">เลขที่</th>
                                     <th class="p-4">รูป & ชื่อ-นามสกุล</th>
-                                    <th class="p-4 text-center">หยิบงานไป (ชิ้น)</th>
                                     <th class="p-4 text-center">เสร็จแล้ว (ชิ้น)</th>
                                     <th class="p-4 text-center">ค้างส่ง (ชิ้น)</th>
-                                    <th class="p-4 text-center">ผลงาน (Drive)</th>
+                                    <th class="p-4 text-center">โฟลเดอร์ผลงาน</th>
+                                    <th class="p-4 text-center">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -826,7 +942,11 @@
                                     const stdTasks = DB.allStudentTasks ? DB.allStudentTasks.filter(t => t.studentId === s.id) : [];
                                     const completed = stdTasks.filter(t => t.status === 'completed').length;
                                     const pending = stdTasks.filter(t => t.status === 'pending').length;
-                                    const ports = DB.allPortfolios ? DB.allPortfolios.filter(p => p.studentId === s.id).length : 0;
+                                    
+                                    // จัดกลุ่มโฟลเดอร์ผลงานเพื่อให้จำนวนตรงกับมุมมองนักเรียน
+                                    const stdPorts = DB.allPortfolios ? DB.allPortfolios.filter(p => p.studentId === s.id) : [];
+                                    const foldersCount = groupPortfolios(stdPorts).length;
+
                                     const mockImg = localStorage.getItem('mock_profile_img_' + s.id) || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
                                     
                                     return `
@@ -836,15 +956,61 @@
                                             <img src="${mockImg}" class="w-8 h-8 rounded-full border border-gray-200 object-cover">
                                             ${s.name}
                                         </td>
-                                        <td class="p-4 text-center"><span class="bg-gray-100 px-2 py-1 rounded text-sm">${stdTasks.length}</span></td>
                                         <td class="p-4 text-center"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-bold">${completed}</span></td>
                                         <td class="p-4 text-center"><span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-sm font-bold">${pending}</span></td>
-                                        <td class="p-4 text-center text-pink-500 font-bold"><i class="fas fa-folder"></i> ${ports}</td>
+                                        <td class="p-4 text-center text-pink-500 font-bold"><i class="fas fa-folder"></i> ${foldersCount}</td>
+                                        <td class="p-4 text-center">
+                                            <button onclick="renderTeacherStudentDetail('${s.id}')" class="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-brand-blue hover:text-white transition-colors"><i class="fas fa-search"></i> ตรวจงาน</button>
+                                        </td>
                                     </tr>`
                                 }).join('')}
                             </tbody>
                         </table>
                     </div>
+                </div>
+            `;
+            document.getElementById('content-container').innerHTML = html;
+        }
+
+        // หน้าสำหรับครูเพื่อดูโฟลเดอร์ผลงานของเด็ก (จำลองการดึงหน้า Portfolio มาแสดง)
+        function renderTeacherStudentDetail(studentId) {
+            const student = DB.users.find(u => u.id === studentId);
+            if(!student) return;
+
+            document.getElementById('page-title').innerHTML = `<button onclick="renderTeacherDashboard()" class="text-gray-400 hover:text-brand-blue transition-colors mr-2"><i class="fas fa-arrow-left"></i></button> ข้อมูลของ ${student.name}`;
+            document.getElementById('page-subtitle').innerText = `โฟลเดอร์ผลงานที่นักเรียนจัดเก็บไว้ใน Drive`;
+
+            // ดึงผลงานและจัดกลุ่มเพื่อใช้สำหรับระบบ Gallery
+            const stdPorts = DB.allPortfolios ? DB.allPortfolios.filter(p => p.studentId === studentId) : [];
+            currentPortfolioGroups = groupPortfolios(stdPorts);
+
+            let html = `
+                <h3 class="font-bold text-lg text-gray-800 mb-4 border-l-4 border-brand-pink pl-2">แฟ้มผลงานทั้งหมด</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                    ${currentPortfolioGroups.length===0 ? '<div class="col-span-full text-center text-gray-400 py-10 bg-white rounded-xl border border-dashed">นักเรียนยังไม่มีโฟลเดอร์ผลงาน</div>':''}
+                    ${currentPortfolioGroups.map((group, index) => {
+                        const coverImgUrl = group.items[0].fileUrl;
+                        return `
+                        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all group cursor-pointer" onclick="openPortfolioGallery(${index})">
+                            <div class="h-40 bg-gray-100 overflow-hidden relative">
+                                <img src="${coverImgUrl}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                                <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                    <div class="bg-black/60 text-white rounded-full w-12 h-12 flex flex-col items-center justify-center backdrop-blur shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+                                        <i class="fas fa-images text-lg"></i>
+                                        <span class="text-[10px] font-bold">${group.items.length}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-bold text-sm text-gray-800 line-clamp-1"><i class="fas fa-folder text-brand-pink mr-1"></i> ${group.title}</h4>
+                                <div class="mt-1 flex justify-between items-center">
+                                    <span class="text-[10px] text-gray-500">${group.date}</span>
+                                    <span class="text-[10px] bg-pink-50 text-brand-pink px-2 py-0.5 rounded">${group.category}</span>
+                                </div>
+                            </div>
+                        </div>
+                        `
+                    }).join('')}
                 </div>
             `;
             document.getElementById('content-container').innerHTML = html;
@@ -869,8 +1035,8 @@
         function handlePortfolioMultiplePreview(event) {
             const files = event.target.files;
             const container = document.getElementById('portfolio-previews-container');
-            container.innerHTML = ''; // เคลียร์ภาพเก่า
-            tempPortfolioImages = []; // รีเซ็ตตัวแปรเก็บภาพ
+            container.innerHTML = ''; 
+            tempPortfolioImages = []; 
 
             if (files.length === 0) return;
 
@@ -887,11 +1053,25 @@
                         name: file.name
                     });
                     
-                    // Add to UI
                     const imgNode = document.createElement('img');
                     imgNode.src = base64;
-                    imgNode.className = "w-20 h-20 object-cover rounded-xl border border-gray-200 shadow-sm flex-shrink-0";
-                    container.appendChild(imgNode);
+                    // ทำเครื่องหมายภาพแรกเป็นหน้าปกโฟลเดอร์ให้สังเกตง่าย
+                    let classes = "w-20 h-20 object-cover rounded-xl border-2 shadow-sm flex-shrink-0 relative ";
+                    classes += index === 0 ? "border-brand-pink" : "border-transparent";
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.className = "relative inline-block";
+                    imgNode.className = classes;
+                    wrapper.appendChild(imgNode);
+                    
+                    if(index === 0) {
+                        const badge = document.createElement('div');
+                        badge.className = "absolute -top-2 -right-2 bg-brand-pink text-white text-[9px] px-1.5 py-0.5 rounded-full z-10 shadow";
+                        badge.innerText = "หน้าปก";
+                        wrapper.appendChild(badge);
+                    }
+
+                    container.appendChild(wrapper);
                 }
                 reader.readAsDataURL(file);
             });
@@ -947,15 +1127,15 @@
             if(tempPortfolioImages.length === 0) { alert("กรุณาเลือกไฟล์ภาพอย่างน้อย 1 รูป"); return; }
 
             const submitBtn = document.getElementById('btn-submit-port');
-            submitBtn.innerText = "กำลังบันทึกภาพลง Drive...";
+            submitBtn.innerText = "กำลังสร้างโฟลเดอร์และอัปโหลด...";
             submitBtn.disabled = true;
 
             const category = document.getElementById('port-category').value;
-            const titlePrefix = document.getElementById('port-title').value;
+            const folderTitle = document.getElementById('port-title').value;
 
             let allSuccess = true;
 
-            // วนลูปส่งภาพทีละภาพ (ป้องกัน Request ใหญเกินไป หรือ Time out)
+            // วนลูปส่งภาพทีละภาพ ให้ชื่อเหมือนกันเพื่อถูกจัดกลุ่มเป็นโฟลเดอร์เดียวกัน
             for(let i=0; i<tempPortfolioImages.length; i++) {
                 const imgData = tempPortfolioImages[i];
                 const base64String = imgData.base64;
@@ -963,7 +1143,7 @@
                 const payload = {
                     studentId: currentUser.id,
                     category: category,
-                    title: tempPortfolioImages.length > 1 ? `${titlePrefix} (${i+1}/${tempPortfolioImages.length})` : titlePrefix,
+                    title: folderTitle, // บังคับชื่อผลงานให้เหมือนกันทุกรูปเพื่อจับกลุ่ม
                     fileData: base64String.split(',')[1],
                     mimeType: base64String.substring(base64String.indexOf(":")+1, base64String.indexOf(";")),
                     fileName: `portfolio_${Date.now()}_${i}`
@@ -975,7 +1155,7 @@
                 }
             }
 
-            submitBtn.innerText = "บันทึกลง Drive";
+            submitBtn.innerText = "อัปโหลดลงโฟลเดอร์ Drive";
             submitBtn.disabled = false;
 
             if(allSuccess) {
@@ -983,11 +1163,11 @@
                 e.target.reset();
                 document.getElementById('portfolio-previews-container').innerHTML = '';
                 tempPortfolioImages = [];
-                showToast(`อัปโหลดผลงานสำเร็จ ${tempPortfolioImages.length > 1 ? 'ทั้งหมด' : ''}!`);
+                showToast(`สร้างโฟลเดอร์และอัปโหลดภาพสำเร็จ!`);
                 loadInitialData();
             } else {
                 showToast('อัปโหลดล้มเหลวบางภาพ (โปรดตรวจสอบ Internet)', 'error');
-                loadInitialData(); // Load what succeeded
+                loadInitialData(); 
             }
         }
     </script>
