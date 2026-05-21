@@ -58,7 +58,6 @@
 
     <!-- ========== ตั้งค่า URL ของ GAS ที่นี่ ========== -->
     <script>
-        // นำ URL ที่ได้จากการ Deploy Web App ของ Google Apps Script มาใส่ตรงนี้เพื่อเชื่อมข้อมูลจริง
         const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwe0ZhgtZ06SryGz7tv33mUnis71tPp9LoSd4nLSgkoo4rv0Xo5Rtl6tIONg539AYPaZg/exec"; 
     </script>
 
@@ -99,11 +98,12 @@
                 </div>
                 <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-blue to-brand-pink text-white font-semibold shadow-lg hover:shadow-xl transition-all">เข้าสู่ระบบ</button>
                 
-                <!-- Info of database dynamic login -->
-                <div class="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-2xl text-xs text-blue-800 space-y-1">
-                    <div class="font-bold flex items-center gap-1"><i class="fas fa-database"></i> เชื่อมต่อฐานข้อมูลแผ่นงานจริง:</div>
-                    <div>👨‍🏫 บัญชีครูประจำชั้น: ค้นหาจากแผ่นงาน <code>Teachers</code></div>
-                    <div>👦 บัญชีนักเรียน: ค้นหาจากแผ่นงาน <code>Users</code></div>
+                <!-- Info of database dynamic login (Fetched from Sheet) -->
+                <div class="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-2xl text-sm text-blue-800 space-y-1">
+                    <div class="font-bold flex items-center gap-1 mb-1 text-brand-blue"><i class="fas fa-info-circle"></i> ประกาศจากระบบ:</div>
+                    <div id="login-desc-text" class="text-gray-600 text-xs">
+                        <i class="fas fa-circle-notch fa-spin"></i> กำลังโหลดข้อความอธิบาย...
+                    </div>
                 </div>
 
                 <div class="mt-4 pt-4 border-t border-gray-200 text-center">
@@ -170,7 +170,6 @@
         <div class="md:hidden fixed top-0 w-full glass-panel z-30 px-4 py-3 flex justify-between items-center shadow-sm">
             <div class="font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-pink">ม.4/2</div>
             <div class="flex items-center gap-3">
-                <!-- Mobile Profile Pic -->
                 <img id="mobile-header-profile-img" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="w-8 h-8 rounded-full border border-gray-200 object-cover" onclick="openEditProfileModal()">
                 <button onclick="document.getElementById('mobile-menu').classList.toggle('hide')" class="text-gray-600 text-2xl"><i class="fas fa-bars"></i></button>
             </div>
@@ -286,7 +285,6 @@
                 <button onclick="closeModal('calendar-detail-modal')" class="text-white hover:text-gray-200"><i class="fas fa-times text-xl"></i></button>
             </div>
             <div class="p-5 overflow-y-auto custom-scrollbar bg-gray-50" id="calendar-detail-content">
-                <!-- Content Injected -->
             </div>
             <div class="p-4 border-t flex justify-end shrink-0 bg-white">
                 <button onclick="closeModal('calendar-detail-modal')" class="px-6 py-2 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition-colors">ปิด</button>
@@ -319,7 +317,6 @@
                     <input type="file" id="port-files" accept="image/*" multiple class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-brand-pink hover:file:bg-pink-100" required onchange="handlePortfolioMultiplePreview(event)">
                     
                     <div id="portfolio-previews-container" class="mt-4 flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
-                        <!-- Imgs injected here -->
                     </div>
                 </div>
                 <div class="pt-4 flex justify-end gap-3 border-t mt-4">
@@ -329,9 +326,8 @@
         </div>
     </div>
 
-    <!-- Portfolio Gallery Modal (สำหรับดูรูปในโฟลเดอร์) -->
+    <!-- Portfolio Gallery Modal -->
     <div id="portfolio-gallery-modal" class="hide fixed inset-0 bg-black/95 backdrop-blur-md z-[80] flex flex-col items-center justify-center p-4">
-        <!-- Top Nav -->
         <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-10">
             <div class="text-white">
                 <h3 id="gallery-title" class="text-xl font-bold">ชื่อผลงาน</h3>
@@ -342,22 +338,14 @@
                 <button onclick="closeModal('portfolio-gallery-modal')" class="text-white hover:text-gray-300 text-3xl transition-colors"><i class="fas fa-times"></i></button>
             </div>
         </div>
-        
-        <!-- Main Image Area -->
         <div class="relative w-full max-w-5xl flex items-center justify-center flex-1 my-16">
             <button onclick="prevGalleryImage()" class="absolute left-2 md:left-10 bg-black/50 text-white w-12 h-12 rounded-full hover:bg-brand-pink transition-colors z-10 flex items-center justify-center text-xl backdrop-blur border border-white/20"><i class="fas fa-chevron-left"></i></button>
-            
             <img id="gallery-main-img" src="" class="max-h-[70vh] max-w-full object-contain rounded-xl shadow-2xl transition-opacity duration-300">
-            
             <button onclick="nextGalleryImage()" class="absolute right-2 md:right-10 bg-black/50 text-white w-12 h-12 rounded-full hover:bg-brand-pink transition-colors z-10 flex items-center justify-center text-xl backdrop-blur border border-white/20"><i class="fas fa-chevron-right"></i></button>
         </div>
-        
-        <!-- Bottom Nav (Thumbnails & Counter) -->
         <div class="absolute bottom-0 w-full p-4 bg-gradient-to-t from-black/80 to-transparent flex flex-col items-center">
             <div id="gallery-counter" class="text-white text-sm font-medium mb-3 bg-black/50 px-3 py-1 rounded-full backdrop-blur">1 / 1</div>
-            <div id="gallery-thumbnails" class="flex gap-2 overflow-x-auto max-w-full pb-2 px-4 custom-scrollbar justify-center">
-                <!-- Thumbnails injected here -->
-            </div>
+            <div id="gallery-thumbnails" class="flex gap-2 overflow-x-auto max-w-full pb-2 px-4 custom-scrollbar justify-center"></div>
         </div>
     </div>
 
@@ -369,13 +357,11 @@
         let currentUser = null;
         let DB = { users: [], boardTasks: [], myTasks: [], portfolios: [] };
         
-        let tempTaskImage = null; // สำหรับเพิ่มการบ้าน
-        let tempPortfolioImages = []; // Array สำหรับเก็บรูปภาพหลายรูปในคลังผลงาน
-        let tempEditProfileImage = null; // สำหรับแก้ไขรูปโปรไฟล์
+        let tempTaskImage = null; 
+        let tempPortfolioImages = []; 
+        let tempEditProfileImage = null; 
 
         let currentCalendarDate = new Date();
-        
-        // สถานะสำหรับหน้าแกลเลอรีผลงาน
         let currentPortfolioGroups = [];
         let currentGalleryItems = [];
         let currentGalleryIndex = 0;
@@ -392,11 +378,7 @@
             toast.innerHTML = msg;
             document.body.appendChild(toast);
             
-            // Animation in
-            requestAnimationFrame(() => {
-                toast.classList.remove('opacity-0', 'translate-y-[-20px]');
-            });
-
+            requestAnimationFrame(() => toast.classList.remove('opacity-0', 'translate-y-[-20px]'));
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-[-20px]');
                 setTimeout(() => toast.remove(), 300);
@@ -408,7 +390,6 @@
                 alert("กรุณาใส่ URL ของ Google Apps Script ในตัวแปร GAS_WEBAPP_URL ก่อนใช้งานครับ");
                 return { success: false };
             }
-            showLoader('กำลังซิงค์ข้อมูล...');
             try {
                 const response = await fetch(GAS_WEBAPP_URL, {
                     method: 'POST',
@@ -416,24 +397,33 @@
                     body: JSON.stringify({ action: action, payload: payload })
                 });
                 const result = await response.json();
-                hideLoader();
                 return result;
             } catch (error) {
-                hideLoader();
                 console.error(error);
                 return { success: false, error: true }; 
             }
         }
 
+        // โหลดตอนเริ่มต้น เปิดเว็บมาดึง Setting ก่อน
         window.onload = async () => {
+            // ดึงคำอธิบาย Login จากชีต
+            const settingsRes = await callAPI('getSettings');
+            if(settingsRes && settingsRes.success && settingsRes.data.loginDescription) {
+                document.getElementById('login-desc-text').innerHTML = settingsRes.data.loginDescription;
+            } else {
+                document.getElementById('login-desc-text').innerHTML = '<span class="text-red-500">ไม่สามารถเชื่อมต่อการตั้งค่าระบบได้ โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ต</span>';
+            }
+
             const savedSession = localStorage.getItem('m42_session_uid');
             if(savedSession) {
+                showLoader('กำลังซิงค์ข้อมูลผู้ใช้...');
                 const res = await callAPI('checkSession', { userId: savedSession });
                 if(res && res.success) {
                     currentUser = res.user;
                     if(!currentUser.profileImage) currentUser.profileImage = localStorage.getItem('mock_profile_img_' + currentUser.id) || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
                     loadInitialData();
                 } else {
+                    hideLoader();
                     document.getElementById('auth-view').classList.remove('hide');
                 }
             } else {
@@ -452,7 +442,7 @@
             const u = document.getElementById('login-username').value;
             const p = document.getElementById('login-password').value;
             
-            // ตรวจสอบทั้ง Users (นักเรียน) และ Teachers (ครู) จากฐานข้อมูลชีตของจริง
+            showLoader('กำลังเข้าสู่ระบบ...');
             const res = await callAPI('login', { username: u, password: p });
             if(res && res.success) {
                 currentUser = res.user;
@@ -460,10 +450,9 @@
                 localStorage.setItem('m42_session_uid', currentUser.id);
                 showToast(`ยินดีต้อนรับ ${currentUser.name}`);
                 loadInitialData();
-            } else if (res && res.error) {
-                showToast('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
             } else {
-                showToast(res ? res.message : 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
+                hideLoader();
+                showToast(res.error ? 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' : res.message, 'error');
             }
         }
 
@@ -475,8 +464,9 @@
                 user: document.getElementById('reg-username').value,
                 pass: document.getElementById('reg-password').value
             };
-
+            showLoader('กำลังสร้างบัญชี...');
             const res = await callAPI('register', data);
+            hideLoader();
             if(res && res.success) {
                 showToast('ลงทะเบียนสำเร็จ! กรุณาล็อกอิน');
                 toggleAuthMode();
@@ -532,6 +522,7 @@
         // --- DATA LOADING & UI ---
         async function loadInitialData() {
             const res = await callAPI('getDashboardData', { userId: currentUser.id, role: currentUser.role });
+            hideLoader();
             if(res && res.success) {
                 DB = res.data;
                 showDashboard();
@@ -561,7 +552,7 @@
                 { id: 'calendar', icon: 'fa-calendar-alt', text: 'ปฏิทินส่งงาน' },
                 { id: 'portfolio', icon: 'fa-folder-open', text: 'แฟ้มผลงาน' }
             ] : [
-                { id: 'teacher-dash', icon: 'fa-users', text: 'รายชื่อและการส่งงาน' },
+                { id: 'teacher-dash', icon: 'fa-users', text: 'รายชื่อและตรวจการบ้าน' },
                 { id: 'calendar', icon: 'fa-calendar-alt', text: 'ปฏิทินห้องเรียน' }
             ];
 
@@ -580,7 +571,6 @@
             document.getElementById('mobile-menu').classList.add('hide');
             const container = document.getElementById('content-container');
             container.innerHTML = '<div class="text-center py-10 text-gray-400"><i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i><br>กำลังโหลด...</div>';
-            
             document.getElementById('scroll-main').scrollTo(0,0);
 
             setTimeout(() => {
@@ -616,7 +606,7 @@
             }
         }
 
-        // --- PORTFOLIO GROUPING & GALLERY LOGIC ---
+        // --- PORTFOLIO GALLERY ---
         function groupPortfolios(ports) {
             const groups = {};
             ports.forEach(p => {
@@ -646,10 +636,7 @@
             const imgEl = document.getElementById('gallery-main-img');
             
             imgEl.classList.add('opacity-0');
-            setTimeout(() => {
-                imgEl.src = item.fileUrl;
-                imgEl.classList.remove('opacity-0');
-            }, 150);
+            setTimeout(() => { imgEl.src = item.fileUrl; imgEl.classList.remove('opacity-0'); }, 150);
 
             document.getElementById('gallery-counter').innerText = `${currentGalleryIndex + 1} / ${currentGalleryItems.length}`;
             
@@ -662,30 +649,12 @@
             if(activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
 
-        function nextGalleryImage() {
-            if(currentGalleryIndex < currentGalleryItems.length - 1) {
-                currentGalleryIndex++;
-                updateGalleryUI();
-            }
-        }
-
-        function prevGalleryImage() {
-            if(currentGalleryIndex > 0) {
-                currentGalleryIndex--;
-                updateGalleryUI();
-            }
-        }
-
-        function setGalleryIndex(idx) {
-            currentGalleryIndex = idx;
-            updateGalleryUI();
-        }
-
+        function nextGalleryImage() { if(currentGalleryIndex < currentGalleryItems.length - 1) { currentGalleryIndex++; updateGalleryUI(); } }
+        function prevGalleryImage() { if(currentGalleryIndex > 0) { currentGalleryIndex--; updateGalleryUI(); } }
+        function setGalleryIndex(idx) { currentGalleryIndex = idx; updateGalleryUI(); }
         function downloadCurrentGalleryImage() {
             const item = currentGalleryItems[currentGalleryIndex];
-            if(item && item.fileUrl) {
-                window.open(item.fileUrl, '_blank');
-            }
+            if(item && item.fileUrl) window.open(item.fileUrl, '_blank');
         }
 
         // --- CALENDAR VIEW ---
@@ -702,12 +671,10 @@
                             <button onclick="changeCalendarMonth(1)" class="w-10 h-10 rounded-full bg-gray-50 hover:bg-brand-blue hover:text-white transition-colors flex items-center justify-center text-gray-600"><i class="fas fa-chevron-right"></i></button>
                         </div>
                     </div>
-                    
                     <div class="grid grid-cols-7 gap-2 mb-2 text-center text-sm font-bold text-gray-400">
                         <div>อา</div><div>จ</div><div>อ</div><div>พ</div><div>พฤ</div><div>ศ</div><div>ส</div>
                     </div>
                     <div id="calendar-grid" class="grid grid-cols-7 gap-2 text-center"></div>
-                    
                     <div class="mt-6 flex items-center gap-4 text-sm text-gray-500 justify-center border-t pt-4">
                         <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-orange-500 inline-block"></span> มีงานครบกำหนดส่ง</div>
                     </div>
@@ -717,10 +684,7 @@
             generateCalendarGrid();
         }
 
-        function changeCalendarMonth(direction) {
-            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
-            generateCalendarGrid();
-        }
+        function changeCalendarMonth(direction) { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction); generateCalendarGrid(); }
 
         function generateCalendarGrid() {
             const year = currentCalendarDate.getFullYear();
@@ -728,7 +692,6 @@
             const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
             
             document.getElementById('calendar-header-label').innerText = `${monthNames[month]} ${year + 543}`;
-            
             const firstDayIndex = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const grid = document.getElementById('calendar-grid');
@@ -737,16 +700,9 @@
             const today = new Date();
             const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
 
-            let relevantTasks = [];
-            if(currentUser.role === 'student') {
-                relevantTasks = DB.myTasks.filter(t => t.status === 'pending');
-            } else {
-                relevantTasks = DB.boardTasks;
-            }
+            let relevantTasks = currentUser.role === 'student' ? DB.myTasks.filter(t => t.status === 'pending') : DB.boardTasks;
 
-            for (let i = 0; i < firstDayIndex; i++) {
-                grid.innerHTML += `<div></div>`;
-            }
+            for (let i = 0; i < firstDayIndex; i++) grid.innerHTML += `<div></div>`;
 
             for (let i = 1; i <= daysInMonth; i++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
@@ -762,17 +718,10 @@
         }
 
         function openCalendarDay(dateStr) {
-            let tasksOnDay = [];
-            if(currentUser.role === 'student') {
-                tasksOnDay = DB.myTasks.filter(t => t.deadline === dateStr && t.status === 'pending');
-            } else {
-                tasksOnDay = DB.boardTasks.filter(t => t.deadline === dateStr);
-            }
-
+            let tasksOnDay = currentUser.role === 'student' ? DB.myTasks.filter(t => t.deadline === dateStr && t.status === 'pending') : DB.boardTasks.filter(t => t.deadline === dateStr);
             if(tasksOnDay.length === 0) return; 
 
-            const container = document.getElementById('calendar-detail-content');
-            container.innerHTML = tasksOnDay.map(t => `
+            document.getElementById('calendar-detail-content').innerHTML = tasksOnDay.map(t => `
                 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-3">
                     <h4 class="font-bold text-gray-800">${t.subject}</h4>
                     <p class="text-sm text-gray-600 mt-1 line-clamp-2">${t.desc}</p>
@@ -782,7 +731,6 @@
 
             document.getElementById('calendar-detail-modal').classList.remove('hide');
         }
-
 
         // --- VIEWS ---
         function renderBoard() {
@@ -901,102 +849,6 @@
                                 </div>
                             </div>
                             <div class="p-3">
-                                <h4 class="font-bold text-sm text-gray-800 line-clamp-1" title="${group.title}"><i class="fas fa-folder text-brand-pink mr-1"></i> ${group.title}</h4>
-                                <div class="mt-1 flex justify-between items-center">
-                                    <span class="text-[10px] text-gray-500">${group.date}</span>
-                                    <span class="text-[10px] bg-pink-50 text-brand-pink px-2 py-0.5 rounded">${group.category}</span>
-                                </div>
-                            </div>
-                        </div>
-                        `
-                    }).join('')}
-                </div>
-            `;
-            document.getElementById('content-container').innerHTML = html;
-        }
-
-        function renderTeacherDashboard() {
-            document.getElementById('page-title').innerText = "ข้อมูลการส่งงานและผลงานนักเรียน";
-            document.getElementById('page-subtitle').innerText = "คลิกดูรายละเอียดเพื่อตรวจสอบผลงานของนักเรียนแต่ละคนได้";
-
-            const students = DB.users.filter(u => u.role === 'student').sort((a,b)=>a.no - b.no);
-
-            let html = `
-                <div class="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse whitespace-nowrap">
-                            <thead>
-                                <tr class="bg-gray-50 text-gray-500 text-sm border-b border-gray-200">
-                                    <th class="p-4 text-center w-16">เลขที่</th>
-                                    <th class="p-4">รูป & ชื่อ-นามสกุล</th>
-                                    <th class="p-4 text-center">เสร็จแล้ว (ชิ้น)</th>
-                                    <th class="p-4 text-center">ค้างส่ง (ชิ้น)</th>
-                                    <th class="p-4 text-center">โฟลเดอร์ผลงาน</th>
-                                    <th class="p-4 text-center">จัดการ</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${students.map(s => {
-                                    const stdTasks = DB.allStudentTasks ? DB.allStudentTasks.filter(t => t.studentId === s.id) : [];
-                                    const completed = stdTasks.filter(t => t.status === 'completed').length;
-                                    const pending = stdTasks.filter(t => t.status === 'pending').length;
-                                    
-                                    const stdPorts = DB.allPortfolios ? DB.allPortfolios.filter(p => p.studentId === s.id) : [];
-                                    const foldersCount = groupPortfolios(stdPorts).length;
-
-                                    const mockImg = localStorage.getItem('mock_profile_img_' + s.id) || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
-                                    
-                                    return `
-                                    <tr class="border-b border-gray-50 hover:bg-blue-50/30">
-                                        <td class="p-4 text-center font-bold text-gray-500">${s.no}</td>
-                                        <td class="p-4 font-medium flex items-center gap-3">
-                                            <img src="${mockImg}" class="w-8 h-8 rounded-full border border-gray-200 object-cover">
-                                            ${s.name}
-                                        </td>
-                                        <td class="p-4 text-center"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-bold">${completed}</span></td>
-                                        <td class="p-4 text-center"><span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-sm font-bold">${pending}</span></td>
-                                        <td class="p-4 text-center text-pink-500 font-bold"><i class="fas fa-folder"></i> ${foldersCount}</td>
-                                        <td class="p-4 text-center">
-                                            <button onclick="renderTeacherStudentDetail('${s.id}')" class="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-brand-blue hover:text-white transition-colors"><i class="fas fa-search"></i> ตรวจงาน</button>
-                                        </td>
-                                    </tr>`
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-            document.getElementById('content-container').innerHTML = html;
-        }
-
-        function renderTeacherStudentDetail(studentId) {
-            const student = DB.users.find(u => u.id === studentId);
-            if(!student) return;
-
-            document.getElementById('page-title').innerHTML = `<button onclick="renderTeacherDashboard()" class="text-gray-400 hover:text-brand-blue transition-colors mr-2"><i class="fas fa-arrow-left"></i></button> ข้อมูลของ ${student.name}`;
-            document.getElementById('page-subtitle').innerText = `โฟลเดอร์ผลงานที่นักเรียนจัดเก็บไว้ใน Drive`;
-
-            const stdPorts = DB.allPortfolios ? DB.allPortfolios.filter(p => p.studentId === studentId) : [];
-            currentPortfolioGroups = groupPortfolios(stdPorts);
-
-            let html = `
-                <h3 class="font-bold text-lg text-gray-800 mb-4 border-l-4 border-brand-pink pl-2">แฟ้มผลงานทั้งหมด</h3>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                    ${currentPortfolioGroups.length===0 ? '<div class="col-span-full text-center text-gray-400 py-10 bg-white rounded-xl border border-dashed">นักเรียนยังไม่มีโฟลเดอร์ผลงาน</div>':''}
-                    ${currentPortfolioGroups.map((group, index) => {
-                        const coverImgUrl = group.items[0].fileUrl;
-                        return `
-                        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all group cursor-pointer" onclick="openPortfolioGallery(${index})">
-                            <div class="h-40 bg-gray-100 overflow-hidden relative">
-                                <img src="${coverImgUrl}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                                <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                    <div class="bg-black/60 text-white rounded-full w-12 h-12 flex flex-col items-center justify-center backdrop-blur shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
-                                        <i class="fas fa-images text-lg"></i>
-                                        <span class="text-[10px] font-bold">${group.items.length}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="p-3">
                                 <h4 class="font-bold text-sm text-gray-800 line-clamp-1"><i class="fas fa-folder text-brand-pink mr-1"></i> ${group.title}</h4>
                                 <div class="mt-1 flex justify-between items-center">
                                     <span class="text-[10px] text-gray-500">${group.date}</span>
@@ -1011,7 +863,152 @@
             document.getElementById('content-container').innerHTML = html;
         }
 
-        // --- IMAGE PREVIEWS ---
+        function renderTeacherDashboard() {
+            document.getElementById('page-title').innerText = "ตรวจการบ้านและผลงานนักเรียน";
+            document.getElementById('page-subtitle').innerText = "คลิกปุ่มตรวจงานเพื่อดูรายการการบ้านของนักเรียนรายบุคคล";
+
+            const students = DB.users.filter(u => u.role === 'student').sort((a,b)=>a.no - b.no);
+
+            let html = `
+                <div class="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse whitespace-nowrap">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-500 text-sm border-b border-gray-200">
+                                    <th class="p-4 text-center w-16">เลขที่</th>
+                                    <th class="p-4">รูป & ชื่อ-นามสกุล</th>
+                                    <th class="p-4 text-center">เสร็จแล้ว (ชิ้น)</th>
+                                    <th class="p-4 text-center">ค้างส่ง (ชิ้น)</th>
+                                    <th class="p-4 text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${students.map(s => {
+                                    const stdTasks = DB.allStudentTasks ? DB.allStudentTasks.filter(t => t.studentId === s.id) : [];
+                                    const completed = stdTasks.filter(t => t.status === 'completed').length;
+                                    const pending = stdTasks.filter(t => t.status === 'pending').length;
+                                    const mockImg = localStorage.getItem('mock_profile_img_' + s.id) || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+                                    
+                                    return `
+                                    <tr class="border-b border-gray-50 hover:bg-blue-50/30">
+                                        <td class="p-4 text-center font-bold text-gray-500">${s.no}</td>
+                                        <td class="p-4 font-medium flex items-center gap-3">
+                                            <img src="${mockImg}" class="w-8 h-8 rounded-full border border-gray-200 object-cover">
+                                            ${s.name}
+                                        </td>
+                                        <td class="p-4 text-center"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-bold">${completed}</span></td>
+                                        <td class="p-4 text-center"><span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-sm font-bold">${pending}</span></td>
+                                        <td class="p-4 text-center">
+                                            <button onclick="renderTeacherStudentDetail('${s.id}')" class="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-brand-blue hover:text-white transition-colors font-medium shadow-sm"><i class="fas fa-search"></i> ตรวจงาน</button>
+                                        </td>
+                                    </tr>`
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            document.getElementById('content-container').innerHTML = html;
+        }
+
+        // หน้าสำหรับครูเพื่อตรวจการบ้านของนักเรียน
+        function renderTeacherStudentDetail(studentId) {
+            const student = DB.users.find(u => u.id === studentId);
+            if(!student) return;
+
+            document.getElementById('page-title').innerHTML = `<button onclick="renderTeacherDashboard()" class="text-gray-400 hover:text-brand-blue transition-colors mr-2"><i class="fas fa-arrow-left"></i></button> ตรวจงานของ ${student.name}`;
+            document.getElementById('page-subtitle').innerText = `รายละเอียดการส่งการบ้านและผลงาน`;
+
+            // Process Tasks
+            const stdTasks = DB.allStudentTasks ? DB.allStudentTasks.filter(t => t.studentId === studentId) : [];
+            const mappedTasks = stdTasks.map(st => {
+                const boardTask = DB.boardTasks.find(bt => bt.id === st.boardTaskId);
+                return {
+                    ...st,
+                    subject: boardTask ? boardTask.subject : 'ไม่ทราบวิชา',
+                    desc: boardTask ? boardTask.desc : '',
+                    deadline: boardTask ? boardTask.deadline : '',
+                };
+            });
+
+            const pending = mappedTasks.filter(t => t.status === 'pending');
+            const completed = mappedTasks.filter(t => t.status === 'completed');
+
+            // Process Portfolios
+            const stdPorts = DB.allPortfolios ? DB.allPortfolios.filter(p => p.studentId === studentId) : [];
+            currentPortfolioGroups = groupPortfolios(stdPorts);
+
+            let html = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Pending Tasks -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-orange-100 overflow-hidden flex flex-col">
+                        <div class="p-4 bg-orange-50/50 border-b border-orange-100 font-bold text-orange-800 flex justify-between items-center">
+                            <span><i class="fas fa-clock text-orange-500 mr-1"></i> การบ้านที่ยังไม่ส่ง (${pending.length})</span>
+                        </div>
+                        <div class="p-4 flex-1 space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                            ${pending.length === 0 ? '<div class="text-center text-gray-400 py-8">นักเรียนส่งงานครบหมดแล้ว</div>' : pending.map(t => `
+                                <div class="p-4 border border-orange-100 rounded-xl bg-orange-50/30">
+                                    <h4 class="font-bold text-gray-800 text-sm mb-1">${t.subject}</h4>
+                                    <p class="text-xs text-gray-500 mb-2 line-clamp-2">${t.desc}</p>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-[10px] text-orange-500 bg-white px-2 py-0.5 rounded border border-orange-100">กำหนด: ${t.deadline}</span>
+                                        <button onclick="openTaskDetail('${t.boardTaskId}')" class="text-[10px] text-brand-blue hover:underline"><i class="fas fa-eye"></i> ดูโจทย์งาน</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Completed Tasks -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-green-100 overflow-hidden flex flex-col">
+                        <div class="p-4 bg-green-50/50 border-b border-green-100 font-bold text-green-800 flex justify-between items-center">
+                            <span><i class="fas fa-check-circle text-green-500 mr-1"></i> การบ้านที่ส่งแล้ว (${completed.length})</span>
+                        </div>
+                        <div class="p-4 flex-1 space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                            ${completed.length === 0 ? '<div class="text-center text-gray-400 py-8">นักเรียนยังไม่มีงานที่ส่ง</div>' : completed.map(t => `
+                                <div class="p-4 border border-green-100 rounded-xl bg-green-50/30 opacity-80 hover:opacity-100 transition-opacity">
+                                    <h4 class="font-bold text-gray-800 text-sm">${t.subject}</h4>
+                                    <div class="text-[10px] text-gray-500 mt-1 line-through">กำหนด: ${t.deadline}</div>
+                                    <div class="mt-2 text-right">
+                                        <button onclick="openTaskDetail('${t.boardTaskId}')" class="text-[10px] text-brand-blue hover:underline"><i class="fas fa-eye"></i> ดูโจทย์งาน</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="font-bold text-lg text-gray-800 mb-4 border-l-4 border-brand-pink pl-2 mt-8">แฟ้มผลงานใน Drive</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                    ${currentPortfolioGroups.length===0 ? '<div class="col-span-full text-center text-gray-400 py-6 bg-white rounded-xl border border-dashed">นักเรียนยังไม่มีโฟลเดอร์ผลงาน</div>':''}
+                    ${currentPortfolioGroups.map((group, index) => {
+                        const coverImgUrl = group.items[0].fileUrl;
+                        return `
+                        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all group cursor-pointer" onclick="openPortfolioGallery(${index})">
+                            <div class="h-32 bg-gray-100 overflow-hidden relative">
+                                <img src="${coverImgUrl}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                                <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                    <div class="bg-black/60 text-white rounded-full w-10 h-10 flex flex-col items-center justify-center backdrop-blur shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+                                        <i class="fas fa-images text-sm"></i>
+                                        <span class="text-[9px] font-bold">${group.items.length}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-2">
+                                <h4 class="font-bold text-xs text-gray-800 line-clamp-1"><i class="fas fa-folder text-brand-pink mr-1"></i> ${group.title}</h4>
+                                <div class="mt-1 flex justify-between items-center">
+                                    <span class="text-[9px] text-gray-500">${group.date}</span>
+                                </div>
+                            </div>
+                        </div>
+                        `
+                    }).join('')}
+                </div>
+            `;
+            document.getElementById('content-container').innerHTML = html;
+        }
+
+        // --- IMAGE PREVIEWS & FORMS ---
         function handleTaskImagePreview(event) {
             const file = event.target.files[0];
             if (file) {
@@ -1036,17 +1033,11 @@
             if (files.length === 0) return;
 
             Array.from(files).forEach((file, index) => {
-                if(file.size > 2 * 1024 * 1024) { 
-                    alert(`ไฟล์ภาพลำดับที่ ${index + 1} ใหญ่เกินไป (จำกัดภาพละ 2MB)`); 
-                    return; 
-                }
+                if(file.size > 2 * 1024 * 1024) { alert(`ไฟล์ภาพลำดับที่ ${index + 1} ใหญ่เกินไป (จำกัดภาพละ 2MB)`); return; }
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const base64 = e.target.result;
-                    tempPortfolioImages.push({
-                        base64: base64,
-                        name: file.name
-                    });
+                    tempPortfolioImages.push({ base64: base64, name: file.name });
                     
                     const imgNode = document.createElement('img');
                     imgNode.src = base64;
@@ -1064,7 +1055,6 @@
                         badge.innerText = "หน้าปก";
                         wrapper.appendChild(badge);
                     }
-
                     container.appendChild(wrapper);
                 }
                 reader.readAsDataURL(file);
@@ -1090,6 +1080,7 @@
                 payload.fileName = "task_attach_" + Date.now();
             }
 
+            showLoader('กำลังบันทึกข้อมูล...');
             const res = await callAPI('addBoardTask', payload);
             if(res && res.success) {
                 closeModal('add-board-task-modal');
@@ -1129,6 +1120,7 @@
 
             let allSuccess = true;
 
+            showLoader('กำลังจัดเก็บรูปภาพลง Google Drive...');
             for(let i=0; i<tempPortfolioImages.length; i++) {
                 const imgData = tempPortfolioImages[i];
                 const base64String = imgData.base64;
@@ -1159,6 +1151,7 @@
                 showToast(`สร้างโฟลเดอร์และอัปโหลดภาพสำเร็จ!`);
                 loadInitialData();
             } else {
+                hideLoader();
                 showToast('อัปโหลดล้มเหลวบางภาพ (โปรดตรวจสอบ Internet)', 'error');
                 loadInitialData(); 
             }
