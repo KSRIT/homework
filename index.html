@@ -446,7 +446,7 @@
             document.getElementById('page-subtitle').innerText = "ดูงานที่ใกล้ถึงกำหนดส่งแบบรายเดือน";
 
             let html = `
-                <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 overflow-hidden">
+                <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 overflow-hidden animate-[fadeIn_0.3s_ease-out]">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-xl font-bold text-gray-800" id="calendar-month-year"></h2>
                         <div class="flex gap-2">
@@ -476,6 +476,29 @@
             generateCalendar(currentMonth, currentYear);
         }
 
+        // ฟังก์ชันแปลงรูปแบบวันที่ให้เป็นสตริง YYYY-MM-DD แบบปลอดภัย
+        function formatTaskDate(rawDate) {
+            if (!rawDate) return "";
+            try {
+                // หากเป็น Object Date จาก GAS
+                if (typeof rawDate === 'object' || rawDate instanceof Date) {
+                    const d = new Date(rawDate);
+                    return d.toISOString().split('T')[0];
+                }
+                // หากส่งมาเป็นสตริงยาวๆ เช่น "2026-05-21T08:00:00.000Z" ให้หั่นเหลือ YYYY-MM-DD
+                if (typeof rawDate === 'string') {
+                    if (rawDate.includes('T')) {
+                        return rawDate.split('T')[0];
+                    }
+                    // หากเป็นรูปแบบวันที่ของเบราว์เซอร์ปกติอยู่แล้ว
+                    return rawDate.trim();
+                }
+            } catch(e) {
+                console.error("Error formatting date", rawDate, e);
+            }
+            return String(rawDate);
+        }
+
         function generateCalendar(month, year) {
             const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
             document.getElementById('calendar-month-year').innerText = `${monthNames[month]} ${year + 543}`;
@@ -503,10 +526,15 @@
             }
 
             for (let i = 1; i <= daysInMonth; i++) {
+                // รูปแบบวันที่พล็อตบนปฏิทินแบบมาตรฐาน YYYY-MM-DD
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                const tasksOnThisDay = allTasksForCal.filter(t => t.deadline === dateStr);
                 
-                let classes = "p-2 md:p-4 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors calendar-day text-sm md:text-base font-medium";
+                // ตรวจค้นหาและคัดกรองงานที่กำหนดส่งตรงกับวันนี้ โดยแปลงวันที่ให้เสถียรที่สุดก่อนนำมาเทียบกัน
+                const tasksOnThisDay = allTasksForCal.filter(t => {
+                    return formatTaskDate(t.deadline) === dateStr;
+                });
+                
+                let classes = "p-2 md:p-4 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors calendar-day text-sm md:text-base font-medium relative";
                 if (isCurrentMonth && i === today.getDate()) classes += " today bg-brand-blue_light text-brand-blue border-brand-blue font-bold";
                 if (tasksOnThisDay.length > 0) classes += " has-task bg-pink-50/30 border-pink-100";
 
@@ -517,9 +545,9 @@
         function showTasksForDate(dateStr) {
             let tasksOnThisDay = [];
             if(currentUser.role === 'student') {
-                tasksOnThisDay = DB.myTasks.filter(t => t.deadline === dateStr && t.status === 'pending');
+                tasksOnThisDay = DB.myTasks.filter(t => formatTaskDate(t.deadline) === dateStr && t.status === 'pending');
             } else {
-                tasksOnThisDay = DB.boardTasks.filter(t => t.deadline === dateStr);
+                tasksOnThisDay = DB.boardTasks.filter(t => formatTaskDate(t.deadline) === dateStr);
             }
 
             const modalDate = document.getElementById('cal-modal-date');
@@ -654,7 +682,7 @@
             document.getElementById('page-subtitle').innerText = "รายชื่อนักเรียนและสถานะ";
             const students = DB.users.filter(u => u.role === 'student').sort((a,b)=>a.no - b.no);
             let html = `
-                <div class="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+                <div class="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm animate-[fadeIn_0.3s_ease-out]">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse whitespace-nowrap">
                             <thead>
