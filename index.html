@@ -25,6 +25,13 @@
         #loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { border: 4px solid #DBEAFE; border-top: 4px solid #3B82F6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 10px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Calendar Styles */
+        .calendar-day.has-task { position: relative; }
+        .calendar-day.has-task::after {
+            content: ''; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+            width: 6px; height: 6px; background-color: #EC4899; border-radius: 50%;
+        }
     </style>
 </head>
 <body class="text-slate-800">
@@ -218,6 +225,20 @@
         </div>
     </div>
 
+    <!-- Calendar Task Details Modal -->
+    <div id="calendar-task-modal" class="hide fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform transition-all">
+            <div class="p-5 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-800" id="cal-modal-date"><i class="far fa-calendar-alt mr-2 text-brand-blue"></i> วันที่</h3>
+                <button onclick="closeModal('calendar-task-modal')" class="text-gray-400 hover:text-gray-800"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-5 max-h-80 overflow-y-auto custom-scrollbar" id="cal-modal-content"></div>
+            <div class="p-4 border-t bg-gray-50 text-right">
+                <button onclick="closeModal('calendar-task-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl text-sm font-medium">ปิด</button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // ==========================================
@@ -228,6 +249,10 @@
         
         let tempPortImageBase64 = null;
         let tempTaskImageBase64 = null;
+
+        // Calendar State
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
 
         function showLoader(text = 'กำลังประมวลผล...') {
             document.getElementById('loader-text').innerText = text;
@@ -356,9 +381,11 @@
             const navItems = currentUser.role === 'student' ? [
                 { id: 'board', icon: 'fa-clipboard', text: 'โจทย์การบ้านห้อง' },
                 { id: 'mytasks', icon: 'fa-tasks', text: 'งานที่ฉันต้องทำ' },
+                { id: 'calendar', icon: 'fa-calendar-alt', text: 'ปฏิทินกิจกรรม' },
                 { id: 'portfolio', icon: 'fa-images', text: 'คลังผลงาน' }
             ] : [
-                { id: 'teacher-dash', icon: 'fa-users', text: 'สรุปการส่งงาน' }
+                { id: 'teacher-dash', icon: 'fa-users', text: 'สรุปการส่งงาน' },
+                { id: 'calendar', icon: 'fa-calendar-alt', text: 'ปฏิทินห้องเรียน' }
             ];
 
             const navHTML = navItems.map(item => `
@@ -381,6 +408,7 @@
                 if (pageId === 'board') renderBoard();
                 else if (pageId === 'mytasks') renderMyTasks();
                 else if (pageId === 'portfolio') renderPortfolio();
+                else if (pageId === 'calendar') renderCalendarView();
                 else if (pageId === 'teacher-dash') renderTeacherDashboard();
             }, 100);
         }
@@ -402,7 +430,6 @@
             const imgEl = document.getElementById('td-task-image');
 
             if (task.thumbnailUrl || task.imageUrl) {
-                // พยายามดึงภาพ Thumbnail ที่พร้อมโหลด หรือใช้ภาพหลักเป็นทางเลือกสำรอง
                 imgEl.src = task.thumbnailUrl || task.imageUrl;
                 imgContainer.classList.remove('hide');
             } else {
@@ -411,6 +438,105 @@
             }
 
             document.getElementById('task-detail-modal').classList.remove('hide');
+        }
+
+        // --- CALENDAR VIEW ---
+        function renderCalendarView() {
+            document.getElementById('page-title').innerText = currentUser.role === 'student' ? "ปฏิทินกิจกรรม" : "ปฏิทินห้องเรียน";
+            document.getElementById('page-subtitle').innerText = "ดูงานที่ใกล้ถึงกำหนดส่งแบบรายเดือน";
+
+            let html = `
+                <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 overflow-hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-800" id="calendar-month-year"></h2>
+                        <div class="flex gap-2">
+                            <button onclick="changeMonth(-1)" class="w-10 h-10 rounded-full bg-gray-50 hover:bg-brand-blue hover:text-white transition-colors flex items-center justify-center text-gray-600"><i class="fas fa-chevron-left"></i></button>
+                            <button onclick="changeMonth(1)" class="w-10 h-10 rounded-full bg-gray-50 hover:bg-brand-blue hover:text-white transition-colors flex items-center justify-center text-gray-600"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-7 gap-2 mb-2 text-center text-sm font-bold text-gray-500">
+                        <div>อา</div><div>จ</div><div>อ</div><div>พ</div><div>พฤ</div><div>ศ</div><div>ส</div>
+                    </div>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-2 text-center"></div>
+                    
+                    <div class="mt-6 flex items-center gap-4 text-sm text-gray-500 justify-center border-t pt-4">
+                        <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-brand-pink inline-block"></span> มีงานกำหนดส่ง</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('content-container').innerHTML = html;
+            generateCalendar(currentMonth, currentYear);
+        }
+
+        function changeMonth(dir) {
+            currentMonth += dir;
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            else if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            generateCalendar(currentMonth, currentYear);
+        }
+
+        function generateCalendar(month, year) {
+            const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            document.getElementById('calendar-month-year').innerText = `${monthNames[month]} ${year + 543}`;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            
+            const today = new Date();
+            const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+
+            // รวบรวมงานทั้งหมด
+            let allTasksForCal = [];
+            if(currentUser.role === 'student') {
+                allTasksForCal = DB.myTasks.filter(t => t.status === 'pending');
+            } else {
+                allTasksForCal = DB.boardTasks;
+            }
+
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += `<div class="p-2 md:p-4 rounded-xl"></div>`;
+            }
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                const tasksOnThisDay = allTasksForCal.filter(t => t.deadline === dateStr);
+                
+                let classes = "p-2 md:p-4 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors calendar-day text-sm md:text-base font-medium";
+                if (isCurrentMonth && i === today.getDate()) classes += " today bg-brand-blue_light text-brand-blue border-brand-blue font-bold";
+                if (tasksOnThisDay.length > 0) classes += " has-task bg-pink-50/30 border-pink-100";
+
+                grid.innerHTML += `<div class="${classes}" onclick="showTasksForDate('${dateStr}')">${i}</div>`;
+            }
+        }
+
+        function showTasksForDate(dateStr) {
+            let tasksOnThisDay = [];
+            if(currentUser.role === 'student') {
+                tasksOnThisDay = DB.myTasks.filter(t => t.deadline === dateStr && t.status === 'pending');
+            } else {
+                tasksOnThisDay = DB.boardTasks.filter(t => t.deadline === dateStr);
+            }
+
+            const modalDate = document.getElementById('cal-modal-date');
+            const [y, m, d] = dateStr.split('-');
+            modalDate.innerHTML = `<i class="far fa-calendar-alt mr-2 text-brand-blue"></i> ${parseInt(d)}/${parseInt(m)}/${parseInt(y)+543}`;
+
+            const content = document.getElementById('cal-modal-content');
+            if (tasksOnThisDay.length === 0) {
+                content.innerHTML = `<div class="text-center text-gray-400 py-4">ไม่มีงานครบกำหนดในวันนี้</div>`;
+            } else {
+                content.innerHTML = tasksOnThisDay.map(t => `
+                    <div class="mb-3 p-3 bg-orange-50 border border-orange-100 rounded-xl last:mb-0">
+                        <div class="font-bold text-orange-800 text-sm">${t.subject}</div>
+                        <div class="text-xs text-gray-600 mt-1">${t.desc}</div>
+                    </div>
+                `).join('');
+            }
+            
+            document.getElementById('calendar-task-modal').classList.remove('hide');
         }
 
         // --- VIEWS ---
@@ -424,7 +550,6 @@
                     ${DB.boardTasks.slice().reverse().map(t => {
                         const alreadyTaken = DB.myTasks.find(myT => myT.boardTaskId === t.id);
                         
-                        // ใช้ thumbnailUrl โดยตรง
                         const imgHTML = t.thumbnailUrl ? 
                             `<div class="mb-3 rounded-lg overflow-hidden border border-gray-100 bg-gray-50 h-32 cursor-pointer relative group" onclick="viewTaskDetails('${t.id}')">
                                 <img src="${t.thumbnailUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
