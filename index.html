@@ -31,7 +31,7 @@
 
     <!-- ========== ตั้งค่า URL ของ GAS ที่นี่ ========== -->
     <script>
-        const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwe0ZhgtZ06SryGz7tv33mUnis71tPp9LoSd4nLSgkoo4rv0Xo5Rtl6tIONg539AYPaZg/exec"; // ใส่ URL Web App ของคุณที่นี่
+        const GAS_WEBAPP_URL = ""; // ใส่ URL Web App ของคุณที่นี่
         const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
     </script>
 
@@ -152,7 +152,7 @@
                     <input type="file" id="bt-image" accept="image/*" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-brand-blue" onchange="previewTaskImage(event)">
                     <img id="bt-preview" src="" class="hide mt-3 max-h-32 rounded-lg object-cover shadow-sm">
                 </div>
-                <div class="pt-4 flex justify-end gap-3"><button type="submit" class="px-6 py-2.5 bg-brand-blue text-white rounded-xl shadow-md">ประกาศลงกระดาน</button></div>
+                <div class="pt-4 flex justify-end gap-3"><button type="submit" class="px-6 py-2.5 bg-brand-blue text-white rounded-xl shadow-md font-bold">ประกาศลงกระดาน</button></div>
             </form>
         </div>
     </div>
@@ -179,8 +179,42 @@
                     <input type="file" id="port-files" accept="image/*" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-pink-50 file:text-brand-pink" required onchange="handleImagePreview(event)">
                     <img id="image-preview" src="" class="hide mt-3 max-h-32 rounded-lg mx-auto shadow-sm object-cover">
                 </div>
-                <div class="pt-4 flex justify-end gap-3"><button type="submit" class="px-6 py-2.5 bg-brand-pink text-white rounded-xl shadow-md">บันทึกลง Drive</button></div>
+                <div class="pt-4 flex justify-end gap-3"><button type="submit" class="px-6 py-2.5 bg-brand-pink text-white rounded-xl shadow-md font-bold">บันทึกลง Drive</button></div>
             </form>
+        </div>
+    </div>
+
+    <!-- Task Detail View Modal (สำหรับกดเข้าไปดูโจทย์ของการบ้านแต่ละชิ้น) -->
+    <div id="task-detail-modal" class="hide fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all my-8">
+            <div class="bg-gradient-to-r from-brand-blue to-brand-blue_light p-5 flex justify-between text-white">
+                <h3 class="font-bold"><i class="fas fa-book-open mr-2"></i>รายละเอียดการบ้าน</h3>
+                <button onclick="closeModal('task-detail-modal')" class="text-white hover:text-gray-200"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <span class="text-xs font-bold text-brand-blue bg-brand-blue_light px-3 py-1 rounded-full uppercase" id="td-subject-badge">วิชา</span>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800" id="td-subject-title">หัวข้อการบ้าน</h2>
+                <div id="td-image-container" class="hide rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 max-h-64 flex justify-center items-center">
+                    <img id="td-task-image" src="" class="max-h-64 w-full object-contain cursor-pointer" onclick="window.open(this.src, '_blank')">
+                </div>
+                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200/50">
+                    <h4 class="text-xs text-gray-400 font-bold mb-1">คำสั่ง/รายละเอียด</h4>
+                    <p class="text-sm text-gray-700 whitespace-pre-line" id="td-desc">รายละเอียดงาน...</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-xs font-medium text-gray-500">
+                    <div>
+                        <i class="far fa-calendar-alt text-orange-500 mr-1"></i> กำหนดส่ง: <span id="td-deadline" class="text-orange-600 font-bold">...</span>
+                    </div>
+                    <div class="text-right">
+                        <i class="far fa-user text-gray-400 mr-1"></i> โดย: <span id="td-addedby">...</span>
+                    </div>
+                </div>
+                <div class="pt-4 border-t flex justify-end">
+                    <button onclick="closeModal('task-detail-modal')" class="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold">ปิดหน้าต่าง</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -353,28 +387,63 @@
 
         function closeModal(id) { document.getElementById(id).classList.add('hide'); }
 
+        // --- POPUP DETAILED VIEW (กดเข้าไปดูโจทย์) ---
+        function viewTaskDetails(boardTaskId) {
+            const task = DB.boardTasks.find(t => t.id == boardTaskId);
+            if (!task) return;
+
+            document.getElementById('td-subject-badge').innerText = task.subject;
+            document.getElementById('td-subject-title').innerText = task.subject;
+            document.getElementById('td-desc').innerText = task.desc;
+            document.getElementById('td-deadline').innerText = task.deadline;
+            document.getElementById('td-addedby').innerText = task.addedByName || 'ไม่ระบุ';
+
+            const imgContainer = document.getElementById('td-image-container');
+            const imgEl = document.getElementById('td-task-image');
+
+            if (task.thumbnailUrl || task.imageUrl) {
+                // พยายามดึงภาพ Thumbnail ที่พร้อมโหลด หรือใช้ภาพหลักเป็นทางเลือกสำรอง
+                imgEl.src = task.thumbnailUrl || task.imageUrl;
+                imgContainer.classList.remove('hide');
+            } else {
+                imgContainer.classList.add('hide');
+                imgEl.src = "";
+            }
+
+            document.getElementById('task-detail-modal').classList.remove('hide');
+        }
+
         // --- VIEWS ---
         function renderBoard() {
             document.getElementById('page-title').innerText = "กระดานโจทย์การบ้าน";
-            document.getElementById('page-subtitle').innerText = "เลือกรับงานที่ตรงกับคุณ เพื่อเก็บไว้ในรายการของฉัน";
+            document.getElementById('page-subtitle').innerText = "แตะเพื่อเลือกดูโจทย์การบ้าน และหยิบงานที่ตรงกับสายวิชาคุณ";
 
             let html = `
-                <div class="mb-6"><button onclick="document.getElementById('add-board-task-modal').classList.remove('hide')" class="px-5 py-2.5 bg-brand-blue text-white rounded-xl shadow hover:bg-blue-600"><i class="fas fa-plus"></i> เพิ่มโจทย์การบ้านใหม่</button></div>
+                <div class="mb-6"><button onclick="document.getElementById('add-board-task-modal').classList.remove('hide')" class="px-5 py-2.5 bg-brand-blue text-white rounded-xl shadow hover:bg-blue-600 font-bold"><i class="fas fa-plus"></i> เพิ่มโจทย์การบ้านใหม่</button></div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     ${DB.boardTasks.slice().reverse().map(t => {
                         const alreadyTaken = DB.myTasks.find(myT => myT.boardTaskId === t.id);
-                        const imgHTML = t.thumbnailUrl ? `<div class="mb-3 rounded-lg overflow-hidden border border-gray-100 bg-gray-50 h-32"><img src="${t.thumbnailUrl}" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform" onclick="window.open('${t.imageUrl}', '_blank')"></div>` : '';
+                        
+                        // ใช้ thumbnailUrl โดยตรง
+                        const imgHTML = t.thumbnailUrl ? 
+                            `<div class="mb-3 rounded-lg overflow-hidden border border-gray-100 bg-gray-50 h-32 cursor-pointer relative group" onclick="viewTaskDetails('${t.id}')">
+                                <img src="${t.thumbnailUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                                <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold"><i class="fas fa-search-plus mr-1"></i> ดูโจทย์การบ้าน</div>
+                             </div>` : '';
                         
                         return `
-                        <div class="bg-white p-5 rounded-2xl border ${alreadyTaken ? 'border-gray-200 opacity-70' : 'border-blue-100 shadow-sm'} flex flex-col">
+                        <div class="bg-white p-5 rounded-2xl border ${alreadyTaken ? 'border-gray-200 opacity-70' : 'border-blue-100 shadow-sm'} flex flex-col hover:shadow-md transition-shadow">
                             <div class="text-[10px] text-gray-400 mb-2">เพิ่มโดย: ${t.addedByName}</div>
-                            <h4 class="font-bold text-lg mb-1">${t.subject}</h4>
+                            <h4 class="font-bold text-lg mb-1 cursor-pointer hover:text-brand-blue transition-colors flex justify-between items-center" onclick="viewTaskDetails('${t.id}')">
+                                <span>${t.subject}</span>
+                                <i class="fas fa-info-circle text-gray-300 hover:text-brand-blue text-sm"></i>
+                            </h4>
                             ${imgHTML}
-                            <p class="text-sm text-gray-600 mb-3 flex-1 bg-gray-50 p-2 rounded border border-gray-100">${t.desc}</p>
+                            <p class="text-sm text-gray-600 mb-3 line-clamp-2 bg-gray-50 p-2 rounded border border-gray-100 cursor-pointer" onclick="viewTaskDetails('${t.id}')">${t.desc}</p>
                             <div class="text-xs text-orange-500 mb-4 font-medium"><i class="far fa-calendar"></i> กำหนดส่ง: ${t.deadline}</div>
                             ${alreadyTaken ? 
-                                `<button disabled class="w-full py-2 bg-gray-100 text-gray-400 rounded-xl font-medium text-sm"><i class="fas fa-check text-green-500"></i> รับงานไปแล้ว</button>` : 
-                                `<button onclick="takeTask('${t.id}')" class="w-full py-2 bg-brand-pink text-white rounded-xl font-medium shadow text-sm"><i class="fas fa-hand-paper"></i> หยิบงานเข้าตัว</button>`}
+                                `<button disabled class="w-full py-2 bg-gray-100 text-gray-400 rounded-xl font-medium text-sm"><i class="fas fa-check text-green-500"></i> ดึงงานนี้เข้าตัวแล้ว</button>` : 
+                                `<button onclick="takeTask('${t.id}')" class="w-full py-2 bg-brand-pink hover:bg-pink-600 text-white rounded-xl font-bold shadow text-sm transition-colors"><i class="fas fa-hand-paper"></i> หยิบงานเข้าตัว</button>`}
                         </div>`;
                     }).join('')}
                     ${DB.boardTasks.length===0 ? '<div class="col-span-full text-center text-gray-400 py-10 bg-white rounded-xl border border-dashed">ไม่มีโจทย์การบ้าน</div>':''}
@@ -385,7 +454,7 @@
 
         function renderMyTasks() {
             document.getElementById('page-title').innerText = "งานที่ฉันต้องส่ง";
-            document.getElementById('page-subtitle').innerText = "จัดการสถานะการบ้านของคุณ";
+            document.getElementById('page-subtitle').innerText = "จัดการสถานะการบ้านและกดแตะเพื่อดูโจทย์แบบละเอียดได้";
             const pending = DB.myTasks.filter(t => t.status === 'pending');
             const completed = DB.myTasks.filter(t => t.status === 'completed');
 
@@ -398,14 +467,14 @@
                 <h3 class="font-bold text-lg mb-3 border-l-4 border-orange-500 pl-2">รอทำ (${pending.length})</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     ${pending.map(t => {
-                        const imgHTML = t.thumbnailUrl ? `<img src="${t.thumbnailUrl}" class="w-full h-24 object-cover rounded-lg mb-2" onclick="window.open('${t.imageUrl}')">` : '';
+                        const imgHTML = t.thumbnailUrl ? `<img src="${t.thumbnailUrl}" class="w-full h-24 object-cover rounded-lg mb-2 cursor-pointer hover:opacity-90" onclick="viewTaskDetails('${t.boardTaskId}')">` : '';
                         return `
                         <div class="bg-white p-5 rounded-2xl border border-orange-200 shadow-sm relative overflow-hidden">
                             <div class="absolute top-0 left-0 w-1 h-full bg-orange-400"></div>
-                            <h4 class="font-bold">${t.subject}</h4>
+                            <h4 class="font-bold text-gray-800 cursor-pointer hover:text-brand-blue" onclick="viewTaskDetails('${t.boardTaskId}')">${t.subject} <i class="fas fa-info-circle text-gray-300 text-xs ml-1"></i></h4>
                             ${imgHTML}
-                            <p class="text-sm text-gray-500 mt-1 mb-4 line-clamp-2">${t.desc}</p>
-                            <button onclick="updateTaskStatus('${t.myTaskId}', 'completed')" class="w-full py-2 bg-green-50 text-green-600 font-bold rounded-xl text-sm border border-green-200"><i class="fas fa-check-circle"></i> กดเมื่อทำเสร็จ</button>
+                            <p class="text-sm text-gray-500 mt-1 mb-4 line-clamp-2 cursor-pointer" onclick="viewTaskDetails('${t.boardTaskId}')">${t.desc}</p>
+                            <button onclick="updateTaskStatus('${t.myTaskId}', 'completed')" class="w-full py-2 bg-green-50 text-green-600 font-bold rounded-xl text-sm border border-green-200 hover:bg-green-100 transition-colors"><i class="fas fa-check-circle"></i> กดเมื่อส่งงานเรียบร้อย</button>
                         </div>`
                     }).join('')}
                     ${pending.length===0?'<div class="col-span-full text-gray-400 text-sm">ไม่มีงานค้าง</div>':''}
@@ -415,10 +484,10 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-60">
                     ${completed.map(t => `
                         <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200">
-                            <h4 class="font-bold text-gray-600 line-through">${t.subject}</h4>
+                            <h4 class="font-bold text-gray-600 line-through cursor-pointer hover:text-brand-blue" onclick="viewTaskDetails('${t.boardTaskId}')">${t.subject}</h4>
                             <button onclick="updateTaskStatus('${t.myTaskId}', 'pending')" class="text-xs text-orange-500 mt-2 hover:underline">เปลี่ยนเป็นยังไม่เสร็จ</button>
-                        </div>
-                    `).join('')}
+                        </div>`
+                    }).join('')}
                 </div>
             `;
             document.getElementById('content-container').innerHTML = html;
@@ -426,9 +495,9 @@
 
         function renderPortfolio() {
             document.getElementById('page-title').innerText = "คลังผลงานส่วนตัว";
-            document.getElementById('page-subtitle').innerText = "อัปโหลดและเก็บในโฟลเดอร์ Drive ของคุณอัตโนมัติ";
+            document.getElementById('page-subtitle').innerText = "อัปโหลดรูปภาพและเก็บในโฟลเดอร์ผลงานของตัวเอง";
             let html = `
-                <div class="mb-6"><button onclick="document.getElementById('upload-port-modal').classList.remove('hide')" class="px-5 py-2.5 bg-brand-pink text-white rounded-xl shadow"><i class="fas fa-upload"></i> อัปโหลดผลงานใหม่</button></div>
+                <div class="mb-6"><button onclick="document.getElementById('upload-port-modal').classList.remove('hide')" class="px-5 py-2.5 bg-brand-pink text-white rounded-xl shadow hover:bg-pink-600 font-bold"><i class="fas fa-upload"></i> อัปโหลดผลงานใหม่</button></div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     ${DB.portfolios.length===0 ? '<div class="col-span-full text-center text-gray-400 py-10 bg-white rounded-xl border border-dashed">ยังไม่มีผลงาน</div>':''}
                     ${DB.portfolios.slice().reverse().map(p => `
@@ -440,7 +509,7 @@
                                 <h4 class="font-bold text-gray-800 line-clamp-1">${p.title}</h4>
                                 <div class="flex justify-between items-center mt-2">
                                     <span class="text-[10px] bg-pink-50 text-brand-pink px-2 py-1 rounded">${p.category}</span>
-                                    <a href="${p.fileUrl}" target="_blank" class="text-xs text-brand-blue hover:underline">ดูรูปเต็ม <i class="fas fa-external-link-alt"></i></a>
+                                    <a href="${p.fileUrl}" target="_blank" class="text-xs text-brand-blue hover:underline font-bold">ดูรูปเต็ม <i class="fas fa-external-link-alt"></i></a>
                                 </div>
                             </div>
                         </div>
@@ -505,6 +574,8 @@
                     currentUser.profilePic = res.thumbnailUrl;
                     updateUIUserInfo();
                     showToast('อัปเดตโปรไฟล์สำเร็จ');
+                } else {
+                    showToast('เปลี่ยนรูปโปรไฟล์ไม่สำเร็จ', 'error');
                 }
             });
         }
@@ -568,6 +639,8 @@
                 closeModal('upload-port-modal'); e.target.reset();
                 document.getElementById('image-preview').classList.add('hide'); tempPortImageBase64 = null;
                 showToast('อัปโหลดผลงานสำเร็จ!'); loadInitialData();
+            } else {
+                showToast('บันทึกผลงานไม่สำเร็จ โปรดลองอีกครั้ง', 'error');
             }
         }
 
