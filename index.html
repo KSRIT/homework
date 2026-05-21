@@ -487,7 +487,7 @@
                             <h4 class="font-bold text-gray-600 line-through cursor-pointer hover:text-brand-blue" onclick="viewTaskDetails('${t.boardTaskId}')">${t.subject}</h4>
                             <button onclick="updateTaskStatus('${t.myTaskId}', 'pending')" class="text-xs text-orange-500 mt-2 hover:underline">เปลี่ยนเป็นยังไม่เสร็จ</button>
                         </div>`
-                    }).join('')}
+                    ).join('')}
                 </div>
             `;
             document.getElementById('content-container').innerHTML = html;
