@@ -26,7 +26,7 @@
     <style>
         body { font-family: 'Kanit', sans-serif; background-color: #f0fdf4; background: linear-gradient(135deg, #eff6ff 0%, #fdf2f8 100%); min-height: 100vh; }
         .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
         .hide { display: none !important; }
@@ -42,6 +42,16 @@
             border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 10px auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Calendar Styles */
+        .calendar-day { transition: all 0.2s; }
+        .calendar-day:hover { background-color: #f8fafc; cursor: pointer; }
+        .calendar-day.today { background-color: #DBEAFE; color: #1E40AF; font-weight: bold; border: 2px solid #3B82F6; }
+        .calendar-day.has-task { position: relative; }
+        .calendar-day.has-task::after {
+            content: ''; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+            width: 6px; height: 6px; background-color: #f97316; border-radius: 50%;
+        }
     </style>
 </head>
 <body class="text-slate-800">
@@ -128,8 +138,14 @@
         <!-- Sidebar -->
         <aside class="w-64 glass-panel flex flex-col justify-between hidden md:flex border-r border-gray-100 relative z-20 shadow-lg">
             <div>
-                <div class="p-6 text-center border-b border-gray-100">
-                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="w-20 h-20 mx-auto rounded-full border-4 border-white shadow-md mb-3 object-cover">
+                <div class="p-6 text-center border-b border-gray-100 relative">
+                    <!-- Profile Picture Clickable -->
+                    <div class="relative inline-block cursor-pointer group" onclick="openEditProfileModal()">
+                        <img id="sidebar-profile-img" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="w-20 h-20 mx-auto rounded-full border-4 border-white shadow-md mb-3 object-cover transition-transform group-hover:scale-105">
+                        <div class="absolute bottom-3 right-0 bg-white p-1.5 rounded-full shadow border border-gray-200 text-brand-blue text-xs group-hover:bg-brand-blue group-hover:text-white transition-colors">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    </div>
                     <h2 id="nav-user-name" class="font-bold text-lg text-gray-800 line-clamp-1">กำลังโหลด...</h2>
                     <span id="nav-user-role" class="text-xs px-3 py-1 bg-brand-blue_light text-brand-blue rounded-full font-medium inline-block mt-1">กำลังโหลด...</span>
                 </div>
@@ -145,7 +161,11 @@
         <!-- Mobile Header -->
         <div class="md:hidden fixed top-0 w-full glass-panel z-30 px-4 py-3 flex justify-between items-center shadow-sm">
             <div class="font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-pink">ม.4/2</div>
-            <button onclick="document.getElementById('mobile-menu').classList.toggle('hide')" class="text-gray-600 text-2xl"><i class="fas fa-bars"></i></button>
+            <div class="flex items-center gap-3">
+                <!-- Mobile Profile Pic -->
+                <img id="mobile-header-profile-img" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="w-8 h-8 rounded-full border border-gray-200 object-cover" onclick="openEditProfileModal()">
+                <button onclick="document.getElementById('mobile-menu').classList.toggle('hide')" class="text-gray-600 text-2xl"><i class="fas fa-bars"></i></button>
+            </div>
         </div>
         <div id="mobile-menu" class="hide fixed inset-0 bg-white/95 backdrop-blur-md z-40 p-6 pt-20 flex flex-col">
             <button onclick="document.getElementById('mobile-menu').classList.add('hide')" class="absolute top-4 right-4 text-2xl"><i class="fas fa-times"></i></button>
@@ -154,17 +174,47 @@
         </div>
 
         <!-- Main Content Area -->
-        <main class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 pt-20 md:pt-8 relative bg-transparent">
+        <main class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 pt-20 md:pt-8 relative bg-transparent" id="scroll-main">
             <header class="mb-8 pr-12">
                 <h1 id="page-title" class="text-3xl font-bold text-gray-800 tracking-tight">ภาพรวม</h1>
                 <p id="page-subtitle" class="text-gray-500 mt-1">กรุณารอสักครู่...</p>
             </header>
-            <div id="content-container" class="space-y-6"></div>
+            <div id="content-container" class="space-y-6 pb-20"></div>
         </main>
     </div>
 
     <!-- ==================== MODALS ==================== -->
     
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="hide fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform transition-all flex flex-col">
+            <div class="bg-gradient-to-r from-brand-blue to-brand-blue_light p-5 flex justify-between text-white shrink-0">
+                <h3 class="font-bold"><i class="fas fa-user-edit mr-2"></i>แก้ไขโปรไฟล์</h3>
+                <button onclick="closeModal('edit-profile-modal')" class="text-white hover:text-gray-200"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <form id="edit-profile-form" onsubmit="submitEditProfile(event)" class="p-6 space-y-4">
+                <div class="text-center mb-4">
+                    <div class="relative inline-block">
+                        <img id="edit-profile-preview" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="w-24 h-24 mx-auto rounded-full border-4 border-gray-100 shadow-sm object-cover">
+                        <label for="profile-upload" class="absolute bottom-0 right-0 bg-brand-blue text-white p-2 rounded-full cursor-pointer shadow hover:bg-blue-600 transition-colors">
+                            <i class="fas fa-camera"></i>
+                        </label>
+                        <input type="file" id="profile-upload" accept="image/*" class="hidden" onchange="handleProfileImagePreview(event)">
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">คลิกที่ไอคอนกล้องเพื่อเปลี่ยนรูปภาพ</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-gray-700">ชื่อแสดงผล</label>
+                    <input type="text" id="edit-profile-name" required class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none bg-gray-50 focus:bg-white transition-colors">
+                </div>
+                <div class="pt-4 flex justify-end gap-3 border-t mt-2">
+                    <button type="button" onclick="closeModal('edit-profile-modal')" class="px-5 py-2.5 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors">ยกเลิก</button>
+                    <button type="submit" class="px-6 py-2.5 bg-brand-blue text-white rounded-xl shadow-md font-bold hover:bg-blue-600 transition-colors">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Add Board Task Modal -->
     <div id="add-board-task-modal" class="hide fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all my-8 max-h-[90vh] flex flex-col">
@@ -191,7 +241,7 @@
         </div>
     </div>
 
-    <!-- Task Detail Modal (ดูรายละเอียดงาน & ไฟล์แนบ) -->
+    <!-- Task Detail Modal -->
     <div id="task-detail-modal" class="hide fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all my-8 max-h-[90vh] flex flex-col">
             <div class="bg-gradient-to-r from-brand-blue to-brand-blue_light p-5 flex justify-between text-white shrink-0">
@@ -220,29 +270,55 @@
         </div>
     </div>
 
+    <!-- Calendar Detail Modal -->
+    <div id="calendar-detail-modal" class="hide fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform transition-all my-8 max-h-[90vh] flex flex-col">
+            <div class="bg-gradient-to-r from-orange-400 to-orange-300 p-5 flex justify-between text-white shrink-0">
+                <h3 class="font-bold"><i class="far fa-calendar-check mr-2"></i>งานที่กำหนดส่งวันนี้</h3>
+                <button onclick="closeModal('calendar-detail-modal')" class="text-white hover:text-gray-200"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto custom-scrollbar bg-gray-50" id="calendar-detail-content">
+                <!-- Content Injected -->
+            </div>
+            <div class="p-4 border-t flex justify-end shrink-0 bg-white">
+                <button onclick="closeModal('calendar-detail-modal')" class="px-6 py-2 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition-colors">ปิด</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Upload Portfolio Modal -->
     <div id="upload-port-modal" class="hide fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all my-8">
-            <div class="bg-gradient-to-r from-brand-pink to-brand-pink_light p-5 flex justify-between text-white">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all my-8 max-h-[90vh] flex flex-col">
+            <div class="bg-gradient-to-r from-brand-pink to-brand-pink_light p-5 flex justify-between text-white shrink-0">
                 <h3 class="font-bold"><i class="fas fa-upload mr-2"></i>อัปโหลดผลงาน</h3>
                 <button onclick="closeModal('upload-port-modal')" class="text-white hover:text-gray-200"><i class="fas fa-times text-xl"></i></button>
             </div>
-            <form id="upload-port-form" onsubmit="submitPortfolio(event)" class="p-6 space-y-4">
+            <form id="upload-port-form" onsubmit="submitPortfolio(event)" class="p-6 space-y-4 overflow-y-auto custom-scrollbar">
                 <div>
                     <label class="block text-sm font-medium mb-1">หมวดหมู่</label>
-                    <select id="port-category" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-brand-pink outline-none">
+                    <select id="port-category" class="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-pink outline-none bg-gray-50">
                         <option value="ผลงานวิชาการ">ผลงานวิชาการ</option>
                         <option value="รูปกิจกรรม">รูปกิจกรรม</option>
                         <option value="เกียรติบัตร">เกียรติบัตร</option>
                     </select>
                 </div>
-                <div><label class="block text-sm font-medium mb-1">ชื่อผลงาน</label><input type="text" id="port-title" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-brand-pink outline-none"></div>
                 <div>
-                    <label class="block text-sm font-medium mb-1">ไฟล์รูปภาพ (จำกัด 2MB)</label>
-                    <input type="file" id="port-files" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-brand-pink hover:file:bg-pink-100" required onchange="handlePortfolioImagePreview(event)">
-                    <img id="image-preview" src="" class="hide mt-3 max-h-32 rounded-lg mx-auto shadow-sm object-cover">
+                    <label class="block text-sm font-medium mb-1">ชื่อผลงาน</label>
+                    <input type="text" id="port-title" required class="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-pink outline-none bg-gray-50">
                 </div>
-                <div class="pt-4 flex justify-end gap-3"><button type="submit" class="px-6 py-2.5 bg-brand-pink text-white rounded-xl shadow-md w-full font-bold">บันทึกลง Drive</button></div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">ไฟล์รูปภาพ <span class="text-brand-pink text-xs">(เลือกได้หลายรูป, รูปละไม่เกิน 2MB)</span></label>
+                    <!-- Added 'multiple' attribute -->
+                    <input type="file" id="port-files" accept="image/*" multiple class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-brand-pink hover:file:bg-pink-100" required onchange="handlePortfolioMultiplePreview(event)">
+                    
+                    <!-- Container for multiple image previews -->
+                    <div id="portfolio-previews-container" class="mt-4 flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                        <!-- Imgs injected here -->
+                    </div>
+                </div>
+                <div class="pt-4 flex justify-end gap-3 border-t mt-4">
+                    <button type="submit" id="btn-submit-port" class="px-6 py-2.5 bg-brand-pink text-white rounded-xl shadow-md w-full font-bold hover:bg-pink-600 transition-colors">บันทึกลง Drive</button>
+                </div>
             </form>
         </div>
     </div>
@@ -250,12 +326,16 @@
 
     <script>
         // ==========================================
-        // API COMMUNICATION (FETCH TO GAS)
+        // API COMMUNICATION & STATE
         // ==========================================
         let currentUser = null;
         let DB = { users: [], boardTasks: [], myTasks: [], portfolios: [] };
-        let tempBase64Image = null; // สำหรับ Portfolio
+        
         let tempTaskImage = null; // สำหรับเพิ่มการบ้าน
+        let tempPortfolioImages = []; // Array สำหรับเก็บรูปภาพหลายรูปในคลังผลงาน
+        let tempEditProfileImage = null; // สำหรับแก้ไขรูปโปรไฟล์
+
+        let currentCalendarDate = new Date();
 
         function showLoader(text = 'กำลังประมวลผล...') {
             document.getElementById('loader-text').innerText = text;
@@ -265,21 +345,28 @@
         
         function showToast(msg, type='success') {
             const toast = document.createElement('div');
-            toast.className = `fixed top-5 right-5 ${type==='error'?'bg-red-500':'bg-green-500'} text-white px-6 py-3 rounded-xl shadow-lg transition-all duration-300 z-[9999]`;
+            toast.className = `fixed top-5 right-5 ${type==='error'?'bg-red-500':'bg-green-500'} text-white px-6 py-3 rounded-xl shadow-lg transition-all duration-300 z-[9999] opacity-0 translate-y-[-20px]`;
             toast.innerHTML = msg;
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            
+            // Animation in
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-[-20px]');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-20px]');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        // ฟังก์ชันหลักที่ใช้ติดต่อกับหลังบ้าน (GAS)
         async function callAPI(action, payload = {}) {
             if(!GAS_WEBAPP_URL) {
                 alert("กรุณาใส่ URL ของ Google Apps Script ในตัวแปร GAS_WEBAPP_URL ก่อนใช้งานครับ");
                 return { success: false };
             }
-            showLoader('กำลังซิงค์ข้อมูลกับฐานข้อมูล...');
+            showLoader('กำลังซิงค์ข้อมูล...');
             try {
-                // ส่งเป็น text/plain เพื่อเลี่ยงการติด CORS Preflight error ในเบราว์เซอร์
                 const response = await fetch(GAS_WEBAPP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -290,9 +377,9 @@
                 return result;
             } catch (error) {
                 hideLoader();
-                showToast('การเชื่อมต่อล้มเหลว ตรวจสอบ URL หรืออินเทอร์เน็ต', 'error');
+                // To allow local visual testing without errors crashing the flow completely
                 console.error(error);
-                return { success: false };
+                return { success: false, error: true }; 
             }
         }
 
@@ -300,8 +387,10 @@
             const savedSession = localStorage.getItem('m42_session_uid');
             if(savedSession) {
                 const res = await callAPI('checkSession', { userId: savedSession });
-                if(res.success) {
+                if(res && res.success) {
                     currentUser = res.user;
+                    // Mock local profile image if not returned by server yet
+                    if(!currentUser.profileImage) currentUser.profileImage = localStorage.getItem('mock_profile_img_' + currentUser.id) || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
                     loadInitialData();
                 } else {
                     document.getElementById('auth-view').classList.remove('hide');
@@ -323,13 +412,16 @@
             const p = document.getElementById('login-password').value;
             
             const res = await callAPI('login', { username: u, password: p });
-            if(res.success) {
+            if(res && res.success) {
                 currentUser = res.user;
+                if(!currentUser.profileImage) currentUser.profileImage = localStorage.getItem('mock_profile_img_' + currentUser.id) || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
                 localStorage.setItem('m42_session_uid', currentUser.id);
                 showToast(`ยินดีต้อนรับ ${currentUser.name}`);
                 loadInitialData();
+            } else if (res && res.error) {
+                showToast('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (ทดสอบออฟไลน์)', 'error');
             } else {
-                showToast(res.message, 'error');
+                showToast(res ? res.message : 'Login failed', 'error');
             }
         }
 
@@ -343,11 +435,11 @@
             };
 
             const res = await callAPI('register', data);
-            if(res.success) {
-                showToast('ลงทะเบียนสร้างโฟลเดอร์สำเร็จ! กรุณาล็อกอิน');
+            if(res && res.success) {
+                showToast('ลงทะเบียนสำเร็จ! กรุณาล็อกอิน');
                 toggleAuthMode();
             } else {
-                showToast(res.message, 'error');
+                showToast(res ? res.message : 'Register failed', 'error');
             }
         }
 
@@ -356,10 +448,54 @@
             location.reload();
         }
 
+        // --- PROFILE EDIT ---
+        function openEditProfileModal() {
+            document.getElementById('edit-profile-name').value = currentUser.name;
+            document.getElementById('edit-profile-preview').src = currentUser.profileImage;
+            tempEditProfileImage = null;
+            document.getElementById('edit-profile-modal').classList.remove('hide');
+            document.getElementById('mobile-menu').classList.add('hide'); // Close mobile menu if open
+        }
+
+        function handleProfileImagePreview(event) {
+            const file = event.target.files[0];
+            if(file) {
+                if(file.size > 2 * 1024 * 1024) { alert('รูปโปรไฟล์ขนาดเกิน 2MB'); return; }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempEditProfileImage = e.target.result;
+                    document.getElementById('edit-profile-preview').src = tempEditProfileImage;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function submitEditProfile(e) {
+            e.preventDefault();
+            const newName = document.getElementById('edit-profile-name').value;
+            
+            // Note: Currently updating the user locally for the demo, since backend "updateProfile" might not exist yet
+            currentUser.name = newName;
+            if(tempEditProfileImage) {
+                currentUser.profileImage = tempEditProfileImage;
+                localStorage.setItem('mock_profile_img_' + currentUser.id, tempEditProfileImage);
+            }
+            
+            // In a real app, call API to update user table
+            // await callAPI('updateProfile', { userId: currentUser.id, name: newName, profileImageBase64: ... });
+
+            updateUIUserInfo();
+            closeModal('edit-profile-modal');
+            showToast('อัปเดตโปรไฟล์เรียบร้อยแล้ว');
+            
+            // If we are on teacher dash, rerender to reflect name change if applicable
+            if(document.getElementById('page-title').innerText.includes("รายชื่อ")) renderTeacherDashboard();
+        }
+
         // --- DATA LOADING & UI ---
         async function loadInitialData() {
             const res = await callAPI('getDashboardData', { userId: currentUser.id, role: currentUser.role });
-            if(res.success) {
+            if(res && res.success) {
                 DB = res.data;
                 showDashboard();
             }
@@ -369,6 +505,11 @@
             const roleText = currentUser.role === 'teacher' ? 'ครูประจำชั้น ม.4/2' : `นักเรียน ม.4/2 (เลขที่ ${currentUser.no})`;
             document.getElementById('nav-user-name').innerText = currentUser.name;
             document.getElementById('nav-user-role').innerText = roleText;
+            
+            const profileImages = [document.getElementById('sidebar-profile-img'), document.getElementById('mobile-header-profile-img')];
+            profileImages.forEach(img => {
+                if(img) img.src = currentUser.profileImage || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+            });
         }
 
         function showDashboard() {
@@ -380,9 +521,11 @@
             const navItems = currentUser.role === 'student' ? [
                 { id: 'board', icon: 'fa-clipboard', text: 'กระดานการบ้านห้อง' },
                 { id: 'mytasks', icon: 'fa-tasks', text: 'งานที่ฉันเลือกทำ' },
+                { id: 'calendar', icon: 'fa-calendar-alt', text: 'ปฏิทินส่งงาน' },
                 { id: 'portfolio', icon: 'fa-images', text: 'คลังผลงาน (Drive)' }
             ] : [
-                { id: 'teacher-dash', icon: 'fa-users', text: 'รายชื่อและการส่งงาน' }
+                { id: 'teacher-dash', icon: 'fa-users', text: 'รายชื่อและการส่งงาน' },
+                { id: 'calendar', icon: 'fa-calendar-alt', text: 'ปฏิทินห้องเรียน' }
             ];
 
             const navHTML = navItems.map(item => `
@@ -401,9 +544,13 @@
             const container = document.getElementById('content-container');
             container.innerHTML = '<div class="text-center py-10 text-gray-400"><i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i><br>กำลังโหลด...</div>';
             
+            // Scroll top
+            document.getElementById('scroll-main').scrollTo(0,0);
+
             setTimeout(() => {
                 if (pageId === 'board') renderBoard();
                 else if (pageId === 'mytasks') renderMyTasks();
+                else if (pageId === 'calendar') renderCalendar();
                 else if (pageId === 'portfolio') renderPortfolio();
                 else if (pageId === 'teacher-dash') renderTeacherDashboard();
             }, 100);
@@ -432,6 +579,108 @@
                 document.getElementById('task-detail-modal').classList.remove('hide');
             }
         }
+
+        // --- CALENDAR VIEW ---
+        function renderCalendar() {
+            document.getElementById('page-title').innerText = "ปฏิทินแสดงวันกำหนดส่งงาน";
+            document.getElementById('page-subtitle').innerText = currentUser.role === 'student' ? "แสดงเฉพาะงานที่คุณเลือกทำและยังค้างส่ง" : "แสดงกำหนดส่งงานทั้งหมดของห้องเรียน";
+
+            let html = `
+                <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-800" id="calendar-header-label"></h2>
+                        <div class="flex gap-2">
+                            <button onclick="changeCalendarMonth(-1)" class="w-10 h-10 rounded-full bg-gray-50 hover:bg-brand-blue hover:text-white transition-colors flex items-center justify-center text-gray-600"><i class="fas fa-chevron-left"></i></button>
+                            <button onclick="changeCalendarMonth(1)" class="w-10 h-10 rounded-full bg-gray-50 hover:bg-brand-blue hover:text-white transition-colors flex items-center justify-center text-gray-600"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-7 gap-2 mb-2 text-center text-sm font-bold text-gray-400">
+                        <div>อา</div><div>จ</div><div>อ</div><div>พ</div><div>พฤ</div><div>ศ</div><div>ส</div>
+                    </div>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-2 text-center"></div>
+                    
+                    <div class="mt-6 flex items-center gap-4 text-sm text-gray-500 justify-center border-t pt-4">
+                        <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-orange-500 inline-block"></span> มีงานครบกำหนดส่ง</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('content-container').innerHTML = html;
+            generateCalendarGrid();
+        }
+
+        function changeCalendarMonth(direction) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
+            generateCalendarGrid();
+        }
+
+        function generateCalendarGrid() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            
+            document.getElementById('calendar-header-label').innerText = `${monthNames[month]} ${year + 543}`;
+            
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            
+            const today = new Date();
+            const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+
+            // Get relevant tasks
+            let relevantTasks = [];
+            if(currentUser.role === 'student') {
+                relevantTasks = DB.myTasks.filter(t => t.status === 'pending');
+            } else {
+                relevantTasks = DB.boardTasks; // Teacher sees all board tasks
+            }
+
+            // Fill empty start slots
+            for (let i = 0; i < firstDayIndex; i++) {
+                grid.innerHTML += `<div></div>`;
+            }
+
+            // Fill days
+            for (let i = 1; i <= daysInMonth; i++) {
+                // Format: YYYY-MM-DD
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                
+                // Find tasks for this day
+                const tasksOnDay = relevantTasks.filter(t => t.deadline === dateStr);
+                
+                let classes = "py-3 rounded-xl border border-gray-100 calendar-day flex flex-col items-center justify-center";
+                if (isCurrentMonth && i === today.getDate()) classes += " today";
+                if (tasksOnDay.length > 0) classes += " has-task bg-orange-50/50 border-orange-100 text-orange-900 font-bold";
+                else classes += " text-gray-700";
+
+                grid.innerHTML += `<div class="${classes}" onclick="openCalendarDay('${dateStr}')">${i}</div>`;
+            }
+        }
+
+        function openCalendarDay(dateStr) {
+            let tasksOnDay = [];
+            if(currentUser.role === 'student') {
+                tasksOnDay = DB.myTasks.filter(t => t.deadline === dateStr && t.status === 'pending');
+            } else {
+                tasksOnDay = DB.boardTasks.filter(t => t.deadline === dateStr);
+            }
+
+            if(tasksOnDay.length === 0) return; // Ignore clicks on empty days
+
+            const container = document.getElementById('calendar-detail-content');
+            container.innerHTML = tasksOnDay.map(t => `
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-3">
+                    <h4 class="font-bold text-gray-800">${t.subject}</h4>
+                    <p class="text-sm text-gray-600 mt-1 line-clamp-2">${t.desc}</p>
+                    <button onclick="openTaskDetail('${t.boardTaskId || t.id}')" class="text-xs text-brand-blue font-medium mt-2"><i class="fas fa-external-link-alt"></i> ดูรายละเอียด</button>
+                </div>
+            `).join('');
+
+            document.getElementById('calendar-detail-modal').classList.remove('hide');
+        }
+
 
         // --- VIEWS ---
         function renderBoard() {
@@ -523,26 +772,26 @@
 
         function renderPortfolio() {
             document.getElementById('page-title').innerText = "คลังผลงานส่วนตัว";
-            document.getElementById('page-subtitle').innerText = "รูปภาพจะถูกบันทึกไว้ใน Google Drive ของคุณ";
+            document.getElementById('page-subtitle').innerText = "ผลงานที่ถูกบันทึกใน Google Drive";
 
             let html = `
                 <div class="mb-6">
-                    <button onclick="document.getElementById('upload-port-modal').classList.remove('hide')" class="px-5 py-2.5 bg-brand-pink text-white rounded-xl shadow font-medium hover:bg-pink-600">
-                        <i class="fas fa-upload"></i> อัปโหลดผลงานใหม่
+                    <button onclick="document.getElementById('upload-port-modal').classList.remove('hide')" class="px-5 py-2.5 bg-brand-pink text-white rounded-xl shadow font-medium hover:bg-pink-600 transition-colors">
+                        <i class="fas fa-images"></i> อัปโหลดรูปภาพผลงานเพิ่ม
                     </button>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                     ${DB.portfolios.length===0 ? '<div class="col-span-full text-center text-gray-400 py-10 bg-white rounded-xl border border-dashed">ยังไม่มีผลงาน</div>':''}
                     ${DB.portfolios.slice().reverse().map(p => `
-                        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-                            <div class="h-48 bg-gray-100">
-                                <img src="${p.fileUrl}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/400x300?text=Image+Saved+in+Drive'">
+                        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-shadow group">
+                            <div class="h-40 bg-gray-100 overflow-hidden relative">
+                                <img src="${p.fileUrl}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.src='https://via.placeholder.com/400x300?text=Image+Saved'">
                             </div>
-                            <div class="p-4">
-                                <h4 class="font-bold text-gray-800 line-clamp-1">${p.title}</h4>
-                                <div class="flex justify-between items-center mt-2">
-                                    <span class="text-[10px] bg-pink-50 text-brand-pink px-2 py-1 rounded">${p.category}</span>
-                                    <a href="${p.fileUrl}" target="_blank" class="text-xs text-brand-blue hover:underline">ดูไฟล์จริง <i class="fas fa-external-link-alt"></i></a>
+                            <div class="p-3">
+                                <h4 class="font-bold text-sm text-gray-800 line-clamp-1" title="${p.title}">${p.title}</h4>
+                                <div class="flex flex-col gap-1 mt-2">
+                                    <span class="text-[10px] bg-pink-50 text-brand-pink px-2 py-0.5 rounded self-start">${p.category}</span>
+                                    <a href="${p.fileUrl}" target="_blank" class="text-xs text-brand-blue hover:underline self-end"><i class="fas fa-external-link-alt"></i> เปิดรูป</a>
                                 </div>
                             </div>
                         </div>
@@ -565,7 +814,7 @@
                             <thead>
                                 <tr class="bg-gray-50 text-gray-500 text-sm border-b border-gray-200">
                                     <th class="p-4 text-center w-16">เลขที่</th>
-                                    <th class="p-4">ชื่อ-นามสกุล</th>
+                                    <th class="p-4">รูป & ชื่อ-นามสกุล</th>
                                     <th class="p-4 text-center">หยิบงานไป (ชิ้น)</th>
                                     <th class="p-4 text-center">เสร็จแล้ว (ชิ้น)</th>
                                     <th class="p-4 text-center">ค้างส่ง (ชิ้น)</th>
@@ -574,15 +823,19 @@
                             </thead>
                             <tbody>
                                 ${students.map(s => {
-                                    const stdTasks = DB.allStudentTasks.filter(t => t.studentId === s.id);
+                                    const stdTasks = DB.allStudentTasks ? DB.allStudentTasks.filter(t => t.studentId === s.id) : [];
                                     const completed = stdTasks.filter(t => t.status === 'completed').length;
                                     const pending = stdTasks.filter(t => t.status === 'pending').length;
-                                    const ports = DB.allPortfolios.filter(p => p.studentId === s.id).length;
+                                    const ports = DB.allPortfolios ? DB.allPortfolios.filter(p => p.studentId === s.id).length : 0;
+                                    const mockImg = localStorage.getItem('mock_profile_img_' + s.id) || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
                                     
                                     return `
                                     <tr class="border-b border-gray-50 hover:bg-blue-50/30">
                                         <td class="p-4 text-center font-bold text-gray-500">${s.no}</td>
-                                        <td class="p-4 font-medium">${s.name}</td>
+                                        <td class="p-4 font-medium flex items-center gap-3">
+                                            <img src="${mockImg}" class="w-8 h-8 rounded-full border border-gray-200 object-cover">
+                                            ${s.name}
+                                        </td>
                                         <td class="p-4 text-center"><span class="bg-gray-100 px-2 py-1 rounded text-sm">${stdTasks.length}</span></td>
                                         <td class="p-4 text-center"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-bold">${completed}</span></td>
                                         <td class="p-4 text-center"><span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-sm font-bold">${pending}</span></td>
@@ -613,20 +866,37 @@
             }
         }
 
-        function handlePortfolioImagePreview(event) {
-            const file = event.target.files[0];
-            if (file) {
-                if(file.size > 2 * 1024 * 1024) { alert('ไฟล์ใหญ่เกินไป (จำกัด 2MB)'); event.target.value = ''; return; }
+        function handlePortfolioMultiplePreview(event) {
+            const files = event.target.files;
+            const container = document.getElementById('portfolio-previews-container');
+            container.innerHTML = ''; // เคลียร์ภาพเก่า
+            tempPortfolioImages = []; // รีเซ็ตตัวแปรเก็บภาพ
+
+            if (files.length === 0) return;
+
+            Array.from(files).forEach((file, index) => {
+                if(file.size > 2 * 1024 * 1024) { 
+                    alert(`ไฟล์ภาพลำดับที่ ${index + 1} ใหญ่เกินไป (จำกัดภาพละ 2MB)`); 
+                    return; 
+                }
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    tempBase64Image = e.target.result; 
-                    const img = document.getElementById('image-preview');
-                    img.src = tempBase64Image;
-                    img.classList.remove('hide');
+                    const base64 = e.target.result;
+                    tempPortfolioImages.push({
+                        base64: base64,
+                        name: file.name
+                    });
+                    
+                    // Add to UI
+                    const imgNode = document.createElement('img');
+                    imgNode.src = base64;
+                    imgNode.className = "w-20 h-20 object-cover rounded-xl border border-gray-200 shadow-sm flex-shrink-0";
+                    container.appendChild(imgNode);
                 }
                 reader.readAsDataURL(file);
-            }
+            });
         }
+
 
         // --- ACTIONS API CALLS ---
         async function submitBoardTask(e) {
@@ -637,10 +907,9 @@
                 deadline: document.getElementById('bt-deadline').value,
                 addedBy: currentUser.id,
                 addedByName: currentUser.name,
-                autoTake: true // สั่งให้ Backend เพิ่มงานนี้เข้าบัญชีของคนสร้างทันที
+                autoTake: true 
             };
             
-            // หากมีการแนบรูปภาพ
             if (tempTaskImage) {
                 payload.fileData = tempTaskImage.split(',')[1];
                 payload.mimeType = tempTaskImage.substring(tempTaskImage.indexOf(":")+1, tempTaskImage.indexOf(";"));
@@ -648,24 +917,21 @@
             }
 
             const res = await callAPI('addBoardTask', payload);
-            if(res.success) {
+            if(res && res.success) {
                 closeModal('add-board-task-modal');
                 e.target.reset();
                 document.getElementById('bt-image-preview').classList.add('hide');
                 tempTaskImage = null;
                 showToast('เพิ่มงานเข้าตัวเองและประกาศลงกระดานสำเร็จ');
                 
-                // ถ้าระบบหลังบ้านยังไม่ได้เขียนรองรับ autoTake ฝั่งเซิร์ฟเวอร์ ให้เรียกฝั่ง Client ด้วย
-                // (ถ้าหลังบ้านรองรับแล้ว ลบ 2 บรรทัดนี้ได้เลยครับ)
                 if(res.boardTaskId) { await callAPI('takeTask', { studentId: currentUser.id, boardTaskId: res.boardTaskId }); }
-                
                 loadInitialData(); 
             }
         }
 
         async function takeTask(boardTaskId) {
             const res = await callAPI('takeTask', { studentId: currentUser.id, boardTaskId: boardTaskId });
-            if(res.success) {
+            if(res && res.success) {
                 showToast('รับงานเข้าตัวเรียบร้อย ดูที่แท็บ "งานที่ฉันต้องส่ง"');
                 loadInitialData();
             }
@@ -673,32 +939,55 @@
 
         async function updateTaskStatus(myTaskId, newStatus) {
             const res = await callAPI('updateTaskStatus', { myTaskId: myTaskId, newStatus: newStatus });
-            if(res.success) { loadInitialData(); }
+            if(res && res.success) { loadInitialData(); }
         }
 
         async function submitPortfolio(e) {
             e.preventDefault();
-            if(!tempBase64Image) { alert("กรุณาเลือกไฟล์ภาพ"); return; }
+            if(tempPortfolioImages.length === 0) { alert("กรุณาเลือกไฟล์ภาพอย่างน้อย 1 รูป"); return; }
 
-            const payload = {
-                studentId: currentUser.id,
-                category: document.getElementById('port-category').value,
-                title: document.getElementById('port-title').value,
-                fileData: tempBase64Image.split(',')[1],
-                mimeType: tempBase64Image.substring(tempBase64Image.indexOf(":")+1, tempBase64Image.indexOf(";")),
-                fileName: "portfolio_" + Date.now()
-            };
+            const submitBtn = document.getElementById('btn-submit-port');
+            submitBtn.innerText = "กำลังบันทึกภาพลง Drive...";
+            submitBtn.disabled = true;
 
-            const res = await callAPI('uploadPortfolio', payload);
-            if(res.success) {
+            const category = document.getElementById('port-category').value;
+            const titlePrefix = document.getElementById('port-title').value;
+
+            let allSuccess = true;
+
+            // วนลูปส่งภาพทีละภาพ (ป้องกัน Request ใหญเกินไป หรือ Time out)
+            for(let i=0; i<tempPortfolioImages.length; i++) {
+                const imgData = tempPortfolioImages[i];
+                const base64String = imgData.base64;
+                
+                const payload = {
+                    studentId: currentUser.id,
+                    category: category,
+                    title: tempPortfolioImages.length > 1 ? `${titlePrefix} (${i+1}/${tempPortfolioImages.length})` : titlePrefix,
+                    fileData: base64String.split(',')[1],
+                    mimeType: base64String.substring(base64String.indexOf(":")+1, base64String.indexOf(";")),
+                    fileName: `portfolio_${Date.now()}_${i}`
+                };
+
+                const res = await callAPI('uploadPortfolio', payload);
+                if(!res || !res.success) {
+                    allSuccess = false;
+                }
+            }
+
+            submitBtn.innerText = "บันทึกลง Drive";
+            submitBtn.disabled = false;
+
+            if(allSuccess) {
                 closeModal('upload-port-modal');
                 e.target.reset();
-                document.getElementById('image-preview').classList.add('hide');
-                tempBase64Image = null;
-                showToast('อัปโหลดผลงานและบันทึกลง Drive สำเร็จ!');
+                document.getElementById('portfolio-previews-container').innerHTML = '';
+                tempPortfolioImages = [];
+                showToast(`อัปโหลดผลงานสำเร็จ ${tempPortfolioImages.length > 1 ? 'ทั้งหมด' : ''}!`);
                 loadInitialData();
             } else {
-                showToast('เกิดข้อผิดพลาดในการอัปโหลด', 'error');
+                showToast('อัปโหลดล้มเหลวบางภาพ (โปรดตรวจสอบ Internet)', 'error');
+                loadInitialData(); // Load what succeeded
             }
         }
     </script>
