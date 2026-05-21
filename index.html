@@ -38,7 +38,7 @@
 
     <!-- ========== ตั้งค่า URL ของ GAS ที่นี่ ========== -->
     <script>
-        const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwe0ZhgtZ06SryGz7tv33mUnis71tPp9LoSd4nLSgkoo4rv0Xo5Rtl6tIONg539AYPaZg/exec"; // ใส่ URL Web App ของคุณที่นี่
+        const GAS_WEBAPP_URL = ""; // ใส่ URL Web App ของคุณที่นี่ (ที่ได้จาก Google Apps Script)
         const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
     </script>
 
@@ -488,11 +488,13 @@
             const today = new Date();
             const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
 
-            // รวบรวมงานทั้งหมด
+            // รวบรวมงานทั้งหมดเพื่อนำมาพล็อตลงบนวันปฏิทิน
             let allTasksForCal = [];
             if(currentUser.role === 'student') {
+                // สำหรับนักเรียน: ดึงงานจากงานส่วนตัวที่ต้องทำและยังค้างส่งอยู่ (pending)
                 allTasksForCal = DB.myTasks.filter(t => t.status === 'pending');
             } else {
+                // สำหรับคุณครูประจำชั้น: แสดงการบ้านทั้งหมดของห้องเรียนที่มีกำหนดส่งในเดือนนั้นๆ
                 allTasksForCal = DB.boardTasks;
             }
 
@@ -529,9 +531,12 @@
                 content.innerHTML = `<div class="text-center text-gray-400 py-4">ไม่มีงานครบกำหนดในวันนี้</div>`;
             } else {
                 content.innerHTML = tasksOnThisDay.map(t => `
-                    <div class="mb-3 p-3 bg-orange-50 border border-orange-100 rounded-xl last:mb-0">
-                        <div class="font-bold text-orange-800 text-sm">${t.subject}</div>
-                        <div class="text-xs text-gray-600 mt-1">${t.desc}</div>
+                    <div class="mb-3 p-4 bg-orange-50 border border-orange-100 rounded-2xl last:mb-0 cursor-pointer hover:bg-orange-100/50 transition-colors" onclick="closeModal('calendar-task-modal'); viewTaskDetails('${t.boardTaskId || t.id}')">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-orange-800 text-sm">${t.subject}</span>
+                            <span class="text-[10px] text-brand-blue underline"><i class="fas fa-search-plus"></i> ดูโจทย์</span>
+                        </div>
+                        <div class="text-xs text-gray-600 line-clamp-2">${t.desc}</div>
                     </div>
                 `).join('');
             }
